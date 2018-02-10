@@ -1,0 +1,595 @@
+package hmc
+
+import (
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/adejoux/pSeriesCollector/pkg/data/hmcpcm"
+	"github.com/adejoux/pSeriesCollector/pkg/data/utils"
+	"github.com/influxdata/influxdb/client/v2"
+)
+
+const timeFormat = "2006-01-02T15:04:05-0700"
+
+// GenerateServerMeasurements generate measurements for HMC Managed servers
+func (d *HMCServer) GenerateServerMeasurements(sysname string, t time.Time, s hmcpcm.ServerData) (int64, int64, int64, int64, []*client.Point) {
+
+	var metSent int64
+	var metError int64
+	var measSent int64
+	var measError int64
+	var ptarray []*client.Point
+
+	Tags := utils.MapDupAndAdd(d.TagMap, map[string]string{"system": sysname})
+	/*Tags := make(map[string]string)
+	for k, v := range d.TagMap {
+		Tags[k] = v
+	}
+	Tags["system"] = sysname*/
+
+	fieldproc := map[string]interface{}{
+		"TotalProcUnits":        s.Processor.TotalProcUnits[0],
+		"UtilizedProcUnits":     s.Processor.UtilizedProcUnits[0],
+		"availableProcUnits":    s.Processor.AvailableProcUnits[0],
+		"configurableProcUnits": s.Processor.ConfigurableProcUnits[0],
+	}
+
+	ptproc, errproc := client.NewPoint("SystemProcessor", Tags, fieldproc, t)
+	if errproc != nil {
+		d.Warnf("error in influx point building:%s", errproc)
+		measError++
+	} else {
+		d.Debugf("GENERATED INFLUX POINT[SystemProcessor] value: %+v", ptproc)
+		ptarray = append(ptarray, ptproc)
+		measSent++
+	}
+
+	fieldmem := map[string]interface{}{
+		"TotalMem":           s.Memory.TotalMem[0],
+		"assignedMemToLpars": s.Memory.AssignedMemToLpars[0],
+		"availableMem":       s.Memory.AvailableMem[0],
+		"ConfigurableMem":    s.Memory.ConfigurableMem[0],
+	}
+
+	ptmem, errmem := client.NewPoint("SystemMemory", Tags, fieldmem, t)
+	if errmem != nil {
+		d.Warnf("error in influx point building:%s", errmem)
+		measError++
+	} else {
+		d.Debugf("GENERATED INFLUX POINT[SystemMemory] value: %+v", ptmem)
+		ptarray = append(ptarray, ptmem)
+		measSent++
+	}
+
+	for _, spp := range s.SharedProcessorPool {
+
+		SppTags := utils.MapDupAndAdd(Tags, map[string]string{"pool": spp.Name})
+
+		/*SppTags := make(map[string]string)
+		for k, v := range Tags {
+			SppTags[k] = v
+		}
+		SppTags["pool"] = spp.Name*/
+
+		fields := map[string]interface{}{
+			"assignedProcUnits":  spp.AssignedProcUnits[0],
+			"utilizedProcUnits":  spp.UtilizedProcUnits[0],
+			"availableProcUnits": spp.AvailableProcUnits[0],
+		}
+
+		pt, err := client.NewPoint("SystemSharedProcessorPool", SppTags, fields, t)
+		if err != nil {
+			d.Warnf("error in influx point building:%s", err)
+			measError++
+		} else {
+			d.Debugf("GENERATED INFLUX POINT[SystemSharedProcessorPool] value: %+v", pt)
+			ptarray = append(ptarray, pt)
+			measSent++
+		}
+	}
+
+	return metSent, metError, measSent, measError, ptarray
+}
+
+// GenerateViosMeasurements generate measurementes for VIOS servers
+func (d *HMCServer) GenerateViosMeasurements(sysname string, t time.Time, v []hmcpcm.ViosData) (int64, int64, int64, int64, []*client.Point) {
+
+	var metSent int64
+	var metError int64
+	var measSent int64
+	var measError int64
+	var ptarray []*client.Point
+
+	Tags := utils.MapDupAndAdd(d.TagMap, map[string]string{"system": sysname})
+
+	for _, vios := range v {
+
+		ViosTags := utils.MapDupAndAdd(Tags, map[string]string{"partition": vios.Name})
+
+		for _, scsi := range vios.Storage.GenericPhysicalAdapters {
+
+			ScsiTags := utils.MapDupAndAdd(ViosTags, map[string]string{"device": scsi.ID})
+
+			fields := map[string]interface{}{
+				"transmittedBytes": scsi.TransmittedBytes[0],
+				"numOfReads":       scsi.NumOfReads[0],
+				"numOfWrites":      scsi.NumOfWrites[0],
+				"readBytes":        scsi.ReadBytes[0],
+				"writeBytes":       scsi.WriteBytes[0],
+			}
+
+			pt, err := client.NewPoint("SystemgenericPhysicalAdapters", ScsiTags, fields, t)
+			if err != nil {
+				d.Warnf("error in influx point building:%s", err)
+				measError++
+			} else {
+				d.Debugf("GENERATED INFLUX POINT[SystemgenericPhysicalAdapters] value: %+v", pt)
+				ptarray = append(ptarray, pt)
+				measSent++
+			}
+		}
+		for _, fc := range vios.Storage.FiberChannelAdapters {
+
+			FcTags := utils.MapDupAndAdd(ViosTags, map[string]string{"device": fc.ID})
+
+			fields := map[string]interface{}{
+				"numOfReads":  fc.NumOfReads[0],
+				"numOfWrites": fc.NumOfWrites[0],
+				"readBytes":   fc.ReadBytes[0],
+				"writeBytes":  fc.WriteBytes[0],
+			}
+
+			if len(fc.TransmittedBytes) > 0 {
+				fields["transmittedBytes"] = fc.TransmittedBytes[0]
+			}
+
+			pt, err := client.NewPoint("SystemFiberChannelAdapters", FcTags, fields, t)
+			if err != nil {
+				d.Warnf("error in influx point building:%s", err)
+				measError++
+			} else {
+				d.Debugf("GENERATED INFLUX POINT[SystemFiberChannelAdapters] value: %+v", pt)
+				ptarray = append(ptarray, pt)
+				measSent++
+			}
+		}
+		for _, vscsi := range vios.Storage.GenericVirtualAdapters {
+
+			VscsiTags := utils.MapDupAndAdd(ViosTags, map[string]string{"device": vscsi.ID})
+
+			fields := map[string]interface{}{
+				"numOfReads":  vscsi.NumOfReads[0],
+				"numOfWrites": vscsi.NumOfWrites[0],
+				"readBytes":   vscsi.ReadBytes[0],
+				"writeBytes":  vscsi.WriteBytes[0],
+			}
+
+			if len(vscsi.TransmittedBytes) > 0 {
+				fields["transmittedBytes"] = vscsi.TransmittedBytes[0]
+			}
+
+			pt, err := client.NewPoint("SystemFiberChannelAdapters", VscsiTags, fields, t)
+			if err != nil {
+				d.Warnf("error in influx point building:%s", err)
+				measError++
+			} else {
+				d.Debugf("GENERATED INFLUX POINT[SystemFiberChannelAdapters] value: %+v", pt)
+				ptarray = append(ptarray, pt)
+				measSent++
+			}
+		}
+		for _, ssp := range vios.Storage.SharedStoragePools {
+
+			SspTags := utils.MapDupAndAdd(ViosTags, map[string]string{"pool": ssp.ID})
+
+			fields := map[string]interface{}{
+				"totalSpace":  ssp.TotalSpace[0],
+				"usedSpace":   ssp.UsedSpace[0],
+				"numOfReads":  ssp.NumOfReads[0],
+				"numOfWrites": ssp.NumOfWrites[0],
+				"readBytes":   ssp.ReadBytes[0],
+				"writeBytes":  ssp.WriteBytes[0],
+			}
+
+			if len(ssp.TransmittedBytes) > 0 {
+				fields["transmittedBytes"] = ssp.TransmittedBytes[0]
+			}
+
+			pt, err := client.NewPoint("SystemSharedStoragePool", SspTags, fields, t)
+			if err != nil {
+				d.Warnf("error in influx point building:%s", err)
+				measError++
+			} else {
+				d.Debugf("GENERATED INFLUX POINT[SystemSharedStoragePool] value: %+v", pt)
+				ptarray = append(ptarray, pt)
+				measSent++
+			}
+		}
+		for _, net := range vios.Network.GenericAdapters {
+
+			NetTags := utils.MapDupAndAdd(ViosTags, map[string]string{"device": net.ID, "type": net.Type})
+
+			fields := map[string]interface{}{
+				"receivedPackets": net.ReceivedPackets[0],
+				"sentPackets":     net.SentPackets[0],
+				"droppedPackets":  net.DroppedPackets[0],
+				"sentBytes":       net.SentBytes[0],
+				"ReceivedBytes":   net.ReceivedBytes[0],
+			}
+
+			if len(net.TransferredBytes) > 0 {
+				fields["transferredBytes"] = net.TransferredBytes[0]
+			}
+
+			pt, err := client.NewPoint("SystemGenericAdapters", NetTags, fields, t)
+			if err != nil {
+				d.Warnf("error in influx point building:%s", err)
+				measError++
+			} else {
+				d.Debugf("GENERATED INFLUX POINT[SystemGenericAdapters] value: %+v", pt)
+				ptarray = append(ptarray, pt)
+				measSent++
+			}
+		}
+
+		for _, net := range vios.Network.SharedAdapters {
+
+			NetTags := utils.MapDupAndAdd(ViosTags, map[string]string{"device": net.ID, "type": net.Type})
+
+			fields := map[string]interface{}{
+				"receivedPackets": net.ReceivedPackets[0],
+				"sentPackets":     net.SentPackets[0],
+				"droppedPackets":  net.DroppedPackets[0],
+				"sentBytes":       net.SentBytes[0],
+				"ReceivedBytes":   net.ReceivedBytes[0],
+			}
+
+			if len(net.TransferredBytes) > 0 {
+				fields["transferredBytes"] = net.TransferredBytes[0]
+			}
+
+			pt, err := client.NewPoint("SystemSharedAdapters", NetTags, fields, t)
+			if err != nil {
+				d.Warnf("error in influx point building:%s", err)
+				measError++
+			} else {
+				d.Debugf("GENERATED INFLUX POINT[SystemSharedAdapters] value: %+v", pt)
+				ptarray = append(ptarray, pt)
+				measSent++
+			}
+		}
+	}
+	return metSent, metError, measSent, measError, ptarray
+
+}
+
+// GenerateLparMeasurements generate measurements for LPAR servers
+func (d *HMCServer) GenerateLparMeasurements(sysname string, t time.Time, l []hmcpcm.LparData) (int64, int64, int64, int64, []*client.Point) {
+
+	var metSent int64
+	var metError int64
+	var measSent int64
+	var measError int64
+	var ptarray []*client.Point
+
+	Tags := utils.MapDupAndAdd(d.TagMap, map[string]string{"system": sysname})
+
+	for _, lpar := range l {
+
+		LparTags := utils.MapDupAndAdd(Tags, map[string]string{"partition": lpar.Name})
+
+		fieldproc := map[string]interface{}{
+			"MaxVirtualProcessors":        lpar.Processor.MaxVirtualProcessors[0],
+			"MaxProcUnits":                lpar.Processor.MaxProcUnits[0],
+			"EntitledProcUnits":           lpar.Processor.EntitledProcUnits[0],
+			"UtilizedProcUnits":           lpar.Processor.UtilizedProcUnits[0],
+			"UtilizedCappedProcUnits":     lpar.Processor.UtilizedCappedProcUnits[0],
+			"UtilizedUncappedProcUnits":   lpar.Processor.UtilizedUncappedProcUnits[0],
+			"IdleProcUnits":               lpar.Processor.IdleProcUnits[0],
+			"DonatedProcUnits":            lpar.Processor.DonatedProcUnits[0],
+			"TimeSpentWaitingForDispatch": lpar.Processor.TimeSpentWaitingForDispatch[0],
+			"TimePerInstructionExecution": lpar.Processor.TimePerInstructionExecution[0],
+		}
+
+		ptproc, errproc := client.NewPoint("PartitionProcessor", LparTags, fieldproc, t)
+		if errproc != nil {
+			d.Warnf("error in influx point building:%s", errproc)
+			measError++
+		} else {
+			d.Debugf("GENERATED INFLUX POINT[PartitionProcessor] value: %+v", ptproc)
+			ptarray = append(ptarray, ptproc)
+			measSent++
+		}
+
+		fieldmem := map[string]interface{}{
+			"LogicalMem":        lpar.Memory.LogicalMem[0],
+			"BackedPhysicalMem": lpar.Memory.BackedPhysicalMem[0],
+		}
+
+		ptmem, errmem := client.NewPoint("PartitionMemory", LparTags, fieldmem, t)
+		if errmem != nil {
+			d.Warnf("error in influx point building:%s", errmem)
+			measError++
+		} else {
+			d.Debugf("GENERATED INFLUX POINT[PartitionMemory] value: %+v", ptmem)
+			ptarray = append(ptarray, ptmem)
+			measSent++
+		}
+
+		for _, vfc := range lpar.Storage.VirtualFiberChannelAdapters {
+
+			FcaTags := utils.MapDupAndAdd(LparTags, map[string]string{
+				"wwpn":             vfc.Wwpn,
+				"PhysicalPortWWPN": vfc.PhysicalPortWWPN,
+				"ViosID":           strconv.Itoa(vfc.ViosID),
+			})
+
+			/*FcaTags := make(map[string]string)
+			for k, v := range LparTags {
+				FcaTags[k] = v
+			}
+			FcaTags["wwpn"] = vfc.Wwpn
+			FcaTags["PhysicalPortWWPN"] = vfc.PhysicalPortWWPN
+			FcaTags["ViosID"] = strconv.Itoa(vfc.ViosID)*/
+
+			fields := map[string]interface{}{
+				"transmittedBytes": vfc.TransmittedBytes[0],
+				"numOfReads":       vfc.NumOfReads[0],
+				"numOfWrites":      vfc.NumOfWrites[0],
+				"readBytes":        vfc.ReadBytes[0],
+				"writeBytes":       vfc.WriteBytes[0],
+			}
+
+			pt, err := client.NewPoint("PartitionVirtualFiberChannelAdapters", FcaTags, fields, t)
+			if err != nil {
+				d.Warnf("error in influx point building:%s", err)
+				measError++
+			} else {
+				d.Debugf("GENERATED INFLUX POINT[PartitionVirtualFiberChannelAdapters] value: %+v", pt)
+				ptarray = append(ptarray, pt)
+				measSent++
+			}
+		}
+
+		for _, vscsi := range lpar.Storage.GenericVirtualAdapters {
+
+			VscsiTags := utils.MapDupAndAdd(LparTags, map[string]string{
+				"device": vscsi.ID,
+				"ViosID": strconv.Itoa(vscsi.ViosID),
+			})
+
+			/*VscsiTags := make(map[string]string)
+			for k, v := range LparTags {
+				VscsiTags[k] = v
+			}
+			VscsiTags["device"] = vscsi.ID
+			VscsiTags["ViosID"] = strconv.Itoa(vscsi.ViosID)*/
+
+			fields := map[string]interface{}{
+				"transmittedBytes": vscsi.TransmittedBytes[0],
+				"numOfReads":       vscsi.NumOfReads[0],
+				"numOfWrites":      vscsi.NumOfWrites[0],
+				"readBytes":        vscsi.ReadBytes[0],
+				"writeBytes":       vscsi.WriteBytes[0],
+			}
+
+			pt, err := client.NewPoint("PartitionVSCSIAdapters", VscsiTags, fields, t)
+			if err != nil {
+				d.Warnf("error in influx point building:%s", err)
+				measError++
+			} else {
+				d.Debugf("GENERATED INFLUX POINT[PartitionVSCSIAdapters] value: %+v", pt)
+				ptarray = append(ptarray, pt)
+				measSent++
+			}
+		}
+
+		for _, net := range lpar.Network.VirtualEthernetAdapters {
+
+			NetTags := utils.MapDupAndAdd(LparTags, map[string]string{
+				"VlanID":    strconv.Itoa(net.VlanID),
+				"VswitchID": strconv.Itoa(net.VswitchID),
+				"SEA":       net.SharedEthernetAdapterID,
+				"ViosID":    strconv.Itoa(net.ViosID),
+			})
+
+			/*NetTags := make(map[string]string)
+			for k, v := range LparTags {
+				NetTags[k] = v
+			}
+			NetTags["VlanID"] = strconv.Itoa(net.VlanID)
+			NetTags["VswitchID"] = strconv.Itoa(net.VswitchID)
+			NetTags["SEA"] = net.SharedEthernetAdapterID
+			NetTags["ViosID"] = strconv.Itoa(net.ViosID)*/
+
+			fields := map[string]interface{}{
+				"transferredBytes":         net.TransferredBytes[0],
+				"receivedPackets":          net.ReceivedPackets[0],
+				"sentPackets":              net.SentPackets[0],
+				"droppedPackets":           net.DroppedPackets[0],
+				"sentBytes":                net.SentBytes[0],
+				"ReceivedBytes":            net.ReceivedBytes[0],
+				"transferredPhysicalBytes": net.TransferredPhysicalBytes[0],
+				"receivedPhysicalPackets":  net.ReceivedPhysicalPackets[0],
+				"sentPhysicalPackets":      net.SentPhysicalPackets[0],
+				"droppedPhysicalPackets":   net.DroppedPhysicalPackets[0],
+				"sentPhysicalBytes":        net.SentPhysicalBytes[0],
+				"ReceivedPhysicalBytes":    net.ReceivedPhysicalBytes[0],
+			}
+
+			pt, err := client.NewPoint("PartitionVirtualEthernetAdapters", NetTags, fields, t)
+			if err != nil {
+				d.Warnf("error in influx point building:%s", err)
+				measError++
+			} else {
+				d.Debugf("GENERATED INFLUX POINT[PartitionVirtualEthernetAdapters] value: %+v", pt)
+				ptarray = append(ptarray, pt)
+				measSent++
+			}
+		}
+
+		for _, net := range lpar.Network.SriovLogicalPorts {
+
+			NetTags := utils.MapDupAndAdd(LparTags, map[string]string{
+				"DrcIndex":    net.DrcIndex,
+				"PhyLocation": net.PhysicalLocation,
+				"PhyDrcIndex": net.PhysicalDrcIndex,
+				"PhyPortID":   strconv.Itoa(net.PhysicalPortID),
+			})
+
+			/*NetTags := make(map[string]string)
+			for k, v := range LparTags {
+				NetTags[k] = v
+			}
+
+			NetTags["DrcIndex"] = net.DrcIndex
+			NetTags["PhyLocation"] = net.PhysicalLocation
+			NetTags["PhyDrcIndex"] = net.PhysicalDrcIndex
+			NetTags["PhyPortID"] = strconv.Itoa(net.PhysicalPortID)*/
+
+			fields := map[string]interface{}{
+				"receivedPackets": net.ReceivedPackets[0],
+				"sentPackets":     net.SentPackets[0],
+				"droppedPackets":  net.DroppedPackets[0],
+				"sentBytes":       net.SentBytes[0],
+				"ReceivedBytes":   net.ReceivedBytes[0],
+			}
+
+			pt, err := client.NewPoint("PartitionSriovLogicalPorts", NetTags, fields, t)
+			if err != nil {
+				d.Warnf("error in influx point building:%s", err)
+				measError++
+			} else {
+				d.Debugf("GENERATED INFLUX POINT[PartitionSriovLogicalPorts] value: %+v", pt)
+				ptarray = append(ptarray, pt)
+				measSent++
+			}
+		}
+	}
+
+	return metSent, metError, measSent, measError, ptarray
+}
+
+//ImportData is the entry point for subcommand hmc
+func (d *HMCServer) ImportData() (int64, int64, int64, int64, []*client.Point, error) {
+	//statictics counters
+	var metSent int64
+	var metError int64
+	var measSent int64
+	var measError int64
+	//influx points
+	var ptarray []*client.Point
+
+	d.Infof("Getting list of managed systems\n")
+	systems, err := d.Session.GetManagedSystems()
+	if err != nil {
+		d.Infof("ERROR on get Managed Systems: %s", err)
+		return 0, 0, 0, 0, nil, err
+	}
+
+	for _, system := range systems {
+		//Pending an  easy and powerfull filtering system
+
+		d.Infof("MANAGED SYSTEM %s", strings.ToUpper(system.Name))
+		pcmlinks, syserr := d.Session.GetSystemPCMLinks(system.UUID)
+		if syserr != nil {
+			d.Infof("Error getting System PCM links: %s", syserr)
+			continue
+		}
+
+		// Get Managed System PCM metrics
+		data, dataerr := d.Session.GetPCMData(pcmlinks.System)
+		if dataerr != nil {
+			d.Errorf("Error geting PCM data: %s", dataerr)
+			continue
+		}
+
+		d.Infof("Processing %d samples ", len(data.SystemUtil.UtilSamples))
+
+		for _, sample := range data.SystemUtil.UtilSamples {
+			timestamp, timeerr := time.Parse(timeFormat, sample.SampleInfo.TimeStamp)
+			if timeerr != nil {
+				d.Errorf("Error on sample timestamp formating ERROR:%s", timeerr)
+				continue
+			}
+
+			// if sample status equal 1 we have no data in this sample
+			if sample.SampleInfo.Status == 1 {
+				d.Warnf("Skipping sample. Error in sample collection: %s\n", sample.SampleInfo.ErrorInfo[0].ErrMsg)
+				continue
+			}
+
+			//ServerUtil
+			mtss, mtes, mss, mes, pts := d.GenerateServerMeasurements(system.Name, timestamp, sample.ServerUtil)
+
+			metSent += mtss
+			metError += mtes
+			measSent += mss
+			measError += mes
+			ptarray = append(ptarray, pts...)
+
+			//ViosUtil
+			mtsv, mtev, msv, mev, ptv := d.GenerateViosMeasurements(system.Name, timestamp, sample.ViosUtil)
+
+			metSent += mtsv
+			metError += mtev
+			measSent += msv
+			measError += mev
+			ptarray = append(ptarray, ptv...)
+
+		}
+
+		if d.ManagedSystemOnly {
+			continue
+		}
+		var lparLinks hmcpcm.PCMLinks
+		for _, link := range pcmlinks.Partitions {
+			//need to parse the link because the specified hostname can be different
+			//of the one specified by the user and the auth cookie will not match
+			rawurl, _ := url.Parse(link)
+			var lparGetPCMErr error
+			lparLinks, lparGetPCMErr = d.Session.GetPartitionPCMLinks(rawurl.Path)
+			if lparGetPCMErr != nil {
+				d.Errorf("Error getting PCM data: %s", lparGetPCMErr)
+				continue
+			}
+
+			for _, lparLink := range lparLinks.Partitions {
+
+				lparData, lparErr := d.Session.GetPCMData(lparLink)
+
+				if lparErr != nil {
+					d.Errorf("Error geting PCM data: %s", lparErr)
+					continue
+				}
+
+				for _, sample := range lparData.SystemUtil.UtilSamples {
+
+					// if sample status equal 1 we have no data in this sample
+					if sample.SampleInfo.Status == 1 {
+						d.Infof("Skipping sample. Error in sample collection: %s\n", sample.SampleInfo.ErrorInfo[0].ErrMsg)
+						continue
+					}
+
+					timestamp, timeerr := time.Parse(timeFormat, sample.SampleInfo.TimeStamp)
+					if timeerr != nil {
+						d.Errorf("Error on sample timestamp formating ERROR:%s", timeerr)
+						continue
+					}
+
+					//LparUtil
+					mts, mte, ms, me, pt := d.GenerateLparMeasurements(system.Name, timestamp, sample.LparsUtil)
+
+					metSent += mts
+					metError += mte
+					measSent += ms
+					measError += me
+					ptarray = append(ptarray, pt...)
+				}
+			}
+		}
+	}
+	return metSent, metError, measSent, measError, ptarray, nil
+}

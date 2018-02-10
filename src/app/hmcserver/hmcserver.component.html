@@ -1,0 +1,181 @@
+<h2>{{defaultConfig.name}}</h2>
+<hr>
+<ng-container [ngSwitch]="editmode">
+  <ng-template ngSwitchCase="list">
+    <test-modal #viewModal [titleName]="defaultConfig.name"></test-modal>
+    <test-modal #viewModalDelete titleName='Deleting:' [customMessage]="['Deleting this OutHTTP Wrapper will affect the following components','Deleting this OutHTTP Wrapper will NOT affect any component. Safe delete']" [customMessageClass]="['alert alert-danger','alert alert-success']"
+        [showValidation]="true" [textValidation]="'Delete'" [controlSize]="true" (validationClicked)="deleteSampleItem($event)">
+    </test-modal>
+    <table-list #listTableComponent [typeComponent]="'outhttp-component'" [data]="data" [columns]="defaultConfig['table-columns']" [counterItems]="counterItems" [counterErrors]="counterErrors" [selectedArray]="selectedArray" [isRequesting]="isRequesting"
+        [tableRole]="tableRole" [roleActions]="overrideRoleActions" (customClicked)="customActions($event)"></table-list>
+  </ng-template>
+  <ng-template ngSwitchDefault>
+    <form [formGroup]="sampleComponentForm" class="form-horizontal" (ngSubmit)="editmode == 'create' ? saveSampleItem() : updateSampleItem()">
+      <ng-container>
+        <div class="row well well-sm">
+          <h4 style="display:inline"><i class="glyphicon glyphicon-cog text-info"></i> {{ editmode | uppercase}}</h4>
+          <div style="display:inline" tooltip='Test Connection' container=body><button class="btn btn-info" type="button" (click)="testHMCServerConnection(sampleComponentForm.value)" [disabled]="!sampleComponentForm.valid"> <i class="glyphicon glyphicon-flash"></i></button></div>
+          <div class="pull-right" style="margin-right: 20px">
+            <div style="display:inline" tooltip='Submit' container=body>
+              <button class="btn btn-success" type="submit" [disabled]="!sampleComponentForm.valid"> <i class="glyphicon glyphicon-ok-circle"></i></button>
+            </div>
+            <div style="display:inline" tooltip='Reset' container=body>
+              <button class="btn btn-warning" type="reset" [disabled]="!sampleComponentForm.dirty"><i class="glyphicon glyphicon-ban-circle"></i> </button>
+            </div>
+            <div style="display:inline" tooltip='Cancel' container=body>
+              <button class="btn btn-danger" type="button" (click)="cancelEdit()"><i class="glyphicon glyphicon-remove-circle"></i></button>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+      <div class="form-fixed-height">
+        <div class="well well-sm">
+          <span class="editsection">Connection Settings</span>
+          <div class="form-group" style="margin-top: 25px">
+            <label class="control-label col-sm-2" for="ID">ID</label>
+            <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Unique identifier of HTTP Alerting Backend server"></i>
+            <div class="col-sm-9">
+              <input formControlName="ID" id="ID" [ngModel]="sampleComponentForm.value.ID" />
+              <control-messages [control]="sampleComponentForm.controls.ID"></control-messages>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label col-sm-2" for="Host">Host</label>
+            <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="@HMC server host"></i>
+            <div class="col-sm-9">
+              <input formControlName="Host" id="Host" [ngModel]="sampleComponentForm.value.Host" />
+              <control-messages [control]="sampleComponentForm.controls.Host"></control-messages>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label col-sm-2" for="Port">Port</label>
+            <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Port for HMC secure web server connection ( usualy 12443 for V7R7.8.0.0 and later: remote secure browser access)"></i>
+            <div class="col-sm-9">
+              <input formControlName="Port" id="Port" [ngModel]="sampleComponentForm.value.Port" />
+              <control-messages [control]="sampleComponentForm.controls.Port"></control-messages>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label col-sm-2" for="User">User</label>
+            <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Authentification user to the DB"></i>
+            <div class="col-sm-9">
+                <input formControlName="User" id="User"  [ngModel]="sampleComponentForm.value.User"/>
+                <control-messages [control]="sampleComponentForm.controls.User"></control-messages>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="control-label col-sm-2" for="Password">Password</label>
+              <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Authentification password to the DB of the user {{sampleComponentForm.value.User}}"></i>
+              <div class="col-sm-9">
+                <input #inputPassword formControlName="Password" id="Password" type="password"  [ngModel]="sampleComponentForm.value.Password"/>
+                <i style="margin-left:-25px; margin-right:6px" [ngClass]="inputPassword.type === 'password' ? ['glyphicon glyphicon-eye-open text-primary'] : ['glyphicon glyphicon-eye-close text-primary']" passwordToggle [input]="inputPassword"> </i>
+                <control-messages [control]="sampleComponentForm.controls.Password"></control-messages>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div *ngIf="alertHandler" class="col-md-offset-2 col-sm-5" >
+                <div [ngClass]="['panel-body', 'bg-'+alertHandler.type,'text-'+alertHandler.type]">
+                  <span>{{alertHandler.result}} - Ping elapsed: {{alertHandler.elapsed / 1000000 }} ms</span>
+                  <p>{{alertHandler.msg}}</p>
+                </div>
+              </div>
+            </div>
+            
+          <div class="form-group">
+            <label class="control-label col-sm-2" for="Active">Active</label>
+            <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Active on Collector reboot"></i>
+            <div class="col-sm-9">
+              <select formControlName="Active" id="Active" [ngModel]="sampleComponentForm.value.Active">
+                <option value="true">True</option>
+                <option value="false">False</option>
+              </select>
+              <control-messages [control]="sampleComponentForm.controls.Active"></control-messages>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label col-sm-2" for="Freq">Freq</label>
+            <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Frequency of hmc data polling (in seconds)"></i>
+            <div class="col-sm-9">
+              <input formControlName="Freq" id="Freq" [ngModel]="sampleComponentForm.value.Freq" />
+              <control-messages [control]="sampleComponentForm.controls.Freq"></control-messages>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label col-sm-2" for="Samples">Samples</label>
+            <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Number of samples to gather"></i>
+            <div class="col-sm-9">
+              <input formControlName="Samples" id="Samples" [ngModel]="sampleComponentForm.value.Samples" />
+              <control-messages [control]="sampleComponentForm.controls.Samples"></control-messages>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label col-sm-2" for="OutDB">InfluxDB Server</label>
+            <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="InfluxDB server"></i>
+            <div class="col-sm-9">
+              <ss-multiselect-dropdown [options]="selectinfluxservers" formControlName="OutDB" [texts]="myTexts" [settings]="mySettingsInflux" [ngModel]="sampleComponentForm.value.OutDB"></ss-multiselect-dropdown>
+              <control-messages [control]="sampleComponentForm.controls.OutDB"></control-messages>
+            </div>
+          </div>
+        </div>
+          <div class="well well-sm">
+            <span class="editsection">Sender Settings</span>
+           <div class="form-group" style="margin-top: 25px">
+            <label class="control-label col-sm-2" for="LogLevel">Log level</label>
+            <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Severity log level"></i>
+            <div class="col-sm-9">
+             <select formControlName="LogLevel" id="LogLevel" [ngModel]="sampleComponentForm.value.LogLevel">
+               <option value="panic">Panic</option>
+               <option value="fatal">Fatal</option>
+               <option value="error">Error</option>
+               <option value="warn">Warning</option>
+               <option selected="selected" value="info">Info</option>
+               <option value="debug">Debug</option>
+             </select>
+             <control-messages [control]="sampleComponentForm.controls.LogLevel"></control-messages>
+            </div> <!-- div class="col-sm-9 -->
+         </div><!-- class="form-group" style="margin-top: 25px" -->
+         <div class="form-group">
+          <label class="control-label col-sm-2" for="DeviceTagName">DeviceTagName</label>
+          <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Device Tag used to identify this hmc as default 'hmc' will be used"></i>
+          <div class="col-sm-9">
+            <input formControlName="DeviceTagName" id="DeviceTagName" [ngModel]="sampleComponentForm.value.DeviceTagName" />
+            <control-messages [control]="sampleComponentForm.controls.DeviceTagName"></control-messages>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="control-label col-sm-2" for="DeviceTagValue">Device Tag Value</label>
+          <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Tag's value to identify the device in InfluxDB"></i>
+          <div class="col-sm-9">
+            <select formControlName="DeviceTagValue" id="DeviceTagValue" [ngModel]="sampleComponentForm.value.DeviceTagValue">
+              <option selected="selected" value="id">Id - {{sampleComponentForm.controls.ID.value}}</option>
+              <option value="host">Host - {{sampleComponentForm.controls.Host.value}}</option>
+            </select>
+            <control-messages [control]="sampleComponentForm.controls.DeviceTagValue"></control-messages>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="control-label col-sm-2" for="ExtraTags">ExtraTags</label>
+          <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Extra Tags for the device"></i>
+          <div class="col-sm-9">
+            <input formControlName="ExtraTags" id="ExtraTags" [ngModel]="sampleComponentForm.value.ExtraTags" />
+            <control-messages [control]="sampleComponentForm.controls.ExtraTags"></control-messages>
+          </div>
+        </div>
+       </div>
+
+      <div class="well well-sm">
+        <span class="editsection">Extra Settings</span>
+        <div class="form-group" style="margin-top: 25px">
+          <label class="control-label col-sm-2" for="Description">Description</label>
+          <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Description of the HTTP Alerting Backend"></i>
+          <div class="col-sm-9">
+            <textarea class="form-control" style="width: 50%" rows="2" formControlName="Description" id="Description" [ngModel]="sampleComponentForm.value.Description"> </textarea>
+            <control-messages [control]="sampleComponentForm.controls.Description"></control-messages>
+          </div>
+        </div>
+      </div>
+      </div>
+    </form>
+  </ng-template>
+</ng-container>

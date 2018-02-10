@@ -1,0 +1,73 @@
+
+############################
+# General Config
+############################
+
+[general]
+ #InstanceID will be a string identifiing the collector , It will be usefull when
+ # more than one running on the same server, this ID will be shown in the WebUI.
+ instanceID = "pseriescollector_PRO"
+ #there are as many logs as devices configured and
+ #logdir set the Directory path for each device individual log
+ logdir = "./log"
+ #NOTE: main process log is now sent to standar ouput
+ # logLevel set de main process log level
+ # valid values: panic,fatal,error,warn,info,debug
+ logLevel = "debug"
+
+ ############################
+ # DataBase Config
+ ############################
+
+[database]
+#type sets the sql backend
+#valid values sqlite3,mysql
+ type = "sqlite3"
+# these parameters are only for mysql
+# host = 127.0.0.1:3306
+# user = "root"
+# password = ""
+# name sets the database name
+ name = "pseriescollector"
+#sqllogfile sets the name for a file in the log/ direcotry where sql backend will write all SQL transactions
+ sqllogfile = "sql.log"
+ # debug adds extra verbosity to the SQL log
+ debug = true
+
+
+############################
+# Self Monitorig Config
+############################
+#config for sending self monitoring metrics to our default influx db
+# Sent Measurements will be <prefix>.gvm with the following fields
+# runtime_goroutines
+# *mem.alloc
+# *mem.mallocs
+# *mem.frees
+# *gc.total_pause_ns
+# *memory.heap
+# *gc.pause_per_second
+# *gc.pause_per_interval
+# *gc.gc_per_second
+# *gc.gc_per_interval
+
+[selfmon]
+ #enable true/false enable/disable self monitoring
+ enabled = true
+ #send data Frequency
+ freq = 60
+ #prefix for measurement naming
+ prefix = ""
+ inheritdevicetags = true
+ #adds extra tags to the measurement sent
+ extratags = [ "instance=pseriescollector01" ]
+
+############################
+# Embedded WebServer Config
+############################
+
+[http]
+ port   = 8090
+ adminuser = "adm1"
+ adminpassword = "adm1pass"
+ cookieid = "my_instance_cookie"

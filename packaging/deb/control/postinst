@@ -1,0 +1,71 @@
+#!/bin/sh
+
+set -e
+
+[ -f /etc/default/pseriescollector ] && . /etc/default/pseriescollector
+
+startpseriescollector() {
+  if [ -x /bin/systemctl ]; then
+    /bin/systemctl daemon-reload
+    /bin/systemctl restart pseriescollector
+	elif [ -x "/etc/init.d/pseriescollector" ]; then
+		if [ -x "`which invoke-rc.d 2>/dev/null`" ]; then
+			invoke-rc.d pseriescollector restart || true
+		else
+			/etc/init.d/pseriescollector restart || true
+		fi
+	fi
+}
+
+case "$1" in
+	configure)
+	[ -z "$RESIST_USER" ] && RESIST_USER="resist"
+	[ -z "$RESIST_GROUP" ] && RESIST_GROUP="resist"
+	if ! getent group "$RESIST_GROUP" > /dev/null 2>&1 ; then
+	    addgroup --system "$RESIST_GROUP" --quiet
+	fi
+	if ! id $RESIST_USER > /dev/null 2>&1 ; then
+	    adduser --system --home /usr/share/pseriescollector --no-create-home \
+		--ingroup "$RESIST_GROUP" --disabled-password --shell /bin/false \
+		"$RESIST_USER"
+	fi
+
+  if [ -x /opt/pseriescollector/ ]; then
+    echo "### Upgrading Notice ### "
+    echo "-- New pseriescollector install home is /usr/share/pseriescollector"
+    #echo "-- Please move sqlite3 database to /var/lib/pseriescollector/"
+    echo "-- Notice: service name && binary changed to pseriescollector"
+  fi
+
+	# Set user permissions on /var/log/pseriescollector, /var/lib/pseriescollector
+	mkdir -p /var/log/pseriescollector /var/lib/pseriescollector
+	chown -R $RESIST_USER:$RESIST_GROUP /var/log/pseriescollector /var/lib/pseriescollector
+	chmod 755 /var/log/pseriescollector /var/lib/pseriescollector
+
+	# configuration files should not be modifiable by pseriescollector user, as this can be a security issue
+	chown -Rh root:$RESIST_GROUP /etc/pseriescollector/*
+	chmod 755 /etc/pseriescollector
+	find /etc/pseriescollector -type f -exec chmod 640 {} ';'
+	find /etc/pseriescollector -type d -exec chmod 755 {} ';'
+
+	# if $2 is set, this is an upgrade
+	if ( [ -n $2 ] && [ "$RESTART_ON_UPGRADE" = "true" ] ) ; then
+		startpseriescollector
+	# this is a fresh installation
+	elif [ -z $2 ] ; then
+        if [ -x /bin/systemctl ] ; then
+            echo "### NOT starting on installation, please execute the following statements to configure pseriescollector to start automatically using systemd"
+            echo " sudo /bin/systemctl daemon-reload"
+            echo " sudo /bin/systemctl enable pseriescollector"
+            echo "### You can start pseriescollector by executing"
+            echo " sudo /bin/systemctl start pseriescollector"
+
+        elif [ -x /usr/sbin/update-rc.d ] ; then
+            echo "### NOT starting pseriescollector by default on bootup, please execute"
+            echo " sudo update-rc.d pseriescollector defaults 95 10"
+            echo "### In order to start pseriescollector, execute"
+            echo " sudo service pseriescollector start"
+        fi
+	fi
+	;;
+esac
