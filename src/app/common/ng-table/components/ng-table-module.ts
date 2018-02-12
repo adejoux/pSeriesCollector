@@ -7,8 +7,6 @@ import { NgTablePagingDirective } from './table/ng-table-paging.directive';
 import { NgTableSortingDirective } from './table/ng-table-sorting.directive';
 import { CustomPipesModule }  from '../../custom-pipe/custom-pipe.module';
 
-//import { ObjectParserPipe as keyParserPipe } from '../../../common/custom_pipe';
-
 @NgModule({
   imports: [CommonModule, TooltipModule, CustomPipesModule],
   declarations: [NgTableComponent, NgTableFilteringDirective, NgTablePagingDirective, NgTableSortingDirective],
