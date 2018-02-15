@@ -8,6 +8,7 @@ import { ValidationService } from '../common/custom-validation/validation.servic
 import { ExportServiceCfg } from '../common/dataservice/export.service'
 
 import { GenericModal } from '../common/custom-modal/generic-modal';
+import { ExportFileModal } from '../common/dataservice/export-file-modal';
 import { Observable } from 'rxjs/Rx';
 
 import { TableListComponent } from '../common/table-list.component';
@@ -26,7 +27,7 @@ declare var _:any;
 export class HMCServerComponent implements OnInit {
   @ViewChild('viewModal') public viewModal: GenericModal;
   @ViewChild('viewModalDelete') public viewModalDelete: GenericModal;
-  @ViewChild('listTableComponent') public listTableComponent: TableListComponent;
+  @ViewChild('exportFileModal') public exportFileModal : ExportFileModal;
 
   public alertHandler:any;
   public editmode: string; //list , create, modify
@@ -108,7 +109,10 @@ export class HMCServerComponent implements OnInit {
   customActions(action : any) {
     switch (action.option) {
       case 'reload' :
-      this.reloadData();
+        this.reloadData();
+      break;
+      case 'export' :
+        this.exportItem(action.event);
       break;
       case 'new' :
         this.newItem()
@@ -151,6 +155,10 @@ export class HMCServerComponent implements OnInit {
 
   viewItem(id) {
     this.viewModal.parseObject(id);
+  }
+
+  exportItem(item : any) : void {
+    this.exportFileModal.initExportModal(item);
   }
 
   removeAllSelectedItems(myArray) {
