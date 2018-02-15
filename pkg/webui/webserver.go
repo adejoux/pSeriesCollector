@@ -172,6 +172,7 @@ func WebServer(publicPath string, httpPort int, cfg *config.HTTPConfig, id strin
 	m.Post("/logout", myLogoutHandler)
 
 	NewAPIRtAgent(m)
+	NewAPIRtDevice(m)
 
 	NewAPICfgInfluxServer(m) //Influx Databases
 	NewAPICfgHMCServer(m)    //HMC Servers

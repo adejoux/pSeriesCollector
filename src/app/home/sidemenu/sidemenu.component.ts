@@ -17,6 +17,7 @@ export class SideMenuComponent {
   @Input() mode : any;
 
   @Output() public clickMenu:EventEmitter<any> = new EventEmitter<any>();
+  @Output() public clickButton:EventEmitter<any> = new EventEmitter<any>();
   @Output() public showModal:EventEmitter<any> = new EventEmitter<any>();
   @Output() public link:EventEmitter<any> = new EventEmitter<any>();
 
@@ -41,5 +42,8 @@ export class SideMenuComponent {
     this.item_type = "";
     this.item_type = menuItem.selector;
     this.clickMenu.emit(menuItem);
+  }
+  clickedButton(menuItem : any) : void {
+    this.clickButton.emit(menuItem);
   }
 }

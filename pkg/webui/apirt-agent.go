@@ -14,6 +14,7 @@ func NewAPIRtAgent(m *macaron.Macaron) error {
 
 	m.Group("/api/rt/agent", func() {
 		m.Get("/info/version/", reqSignedIn, RTGetVersion)
+		m.Get("/reload/", reqSignedIn, AgentReloadConf)
 	})
 
 	return nil
@@ -23,4 +24,15 @@ func NewAPIRtAgent(m *macaron.Macaron) error {
 func RTGetVersion(ctx *Context) {
 	info := agent.GetRInfo()
 	ctx.JSON(200, &info)
+}
+
+// AgentReloadConf xx
+func AgentReloadConf(ctx *Context) {
+	log.Info("trying to reload configuration for all devices")
+	time, err := agent.ReloadConf()
+	if err != nil {
+		ctx.JSON(405, err.Error())
+		return
+	}
+	ctx.JSON(200, time)
 }

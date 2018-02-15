@@ -6,9 +6,7 @@
                 <label (click)="selectAllItems(true)" class="glyphicon glyphicon-check text-success"></label>-
                 <label (click)="selectAllItems(false)" class="glyphicon glyphicon-unchecked text-danger"></label>
             </th>
-            <th *ngIf="tableRole === 'fulledit' || tableRole === 'viewdelete' || tableRole === 'view'" [ngStyle]="exportType ? {'min-width': '95px'} : {'min-width': '80px'}">
-            </th>
-            <th *ngIf="showStatus == true" [ngStyle]="exportType ? {'min-width': '95px'} : {'min-width': '80px'}">
+            <th *ngIf="tableRole === 'fulledit' || tableRole === 'viewdelete' || tableRole === 'view'" [ngStyle]="exportType ? {'min-width': '125px'} : {'min-width': '80px'}">
             </th>
             <ng-container *ngIf="checkRows">
                 <th style="width: 80px; text-align: center; padding-bottom: 15px;" [ngClass]="rows.length === 0 ? ['bg-warning'] : ''">
@@ -16,10 +14,10 @@
                 </th>
             </ng-container>
             <!--HEADER -->
-            <th *ngFor="let column of columns" [ngTableSorting]="config" [column]="column" (sortChanged)="onChangeTable($event)" ngClass="{{column.className || ''}}" style="vertical-align: middle; text-align: center; width:auto !important;" container=body [tooltip]="column.tooltipInfo ? tooltipValues : ( column.tooltip ? column.name : '')">
+            <th *ngFor="let column of columns" [ngTableSorting]="config" [column]="column" (sortChanged)="onChangeTable($event)" ngClass="{{column.className || ''}}" style="vertical-align: middle; text-align: center; width:auto !important; white-space:nowrap" container=body [tooltip]="column.tooltipInfo ? tooltipValues : ( column.tooltip ? column.name : '')">
                 <ng-template #tooltipValues>
                     <ng-container>
-                        <h6> {{column.name}}</h6>
+                        <h6> {{column.title}} </h6>
                         <hr/>
                     </ng-container>
                     <div *ngFor="let test of (column.tooltipInfo | objectParser) " style="text-align:left !important ">
@@ -29,10 +27,10 @@
                         </span>
                     </div>
                 </ng-template>
-                {{column.title}}
+                <span style="white-space: normal">{{column.title}}</span>
                 <i *ngIf="column.icon" [ngClass]="'glyphicon glyphicon-'+column.icon"></i>
                 <span *ngIf="column.tooltipInfo && column.tooltipInfo.IsTag" class="badge">Tag</span>
-                <i *ngIf="config && column.sort " class="pull-right glyphicon " [ngClass]="{ 'glyphicon-chevron-down': column.sort==='desc' , 'glyphicon-chevron-up': column.sort==='asc' } "></i>
+                <small *ngIf="config" style="display:inline" class="glyphicon text-muted" [ngClass]="{ 'glyphicon-sort' : column.sort === '' || !column.sort, 'glyphicon-chevron-down': column.sort==='desc' , 'glyphicon-chevron-up': column.sort==='asc' } "></small>
             </th>
             <ng-container *ngIf="extraActions ">
                 <th *ngFor="let action of extraActions " style="vertical-align: middle; text-align: center; width:auto !important; ">
@@ -43,9 +41,9 @@
     </thead>
     <tbody>
         <tr *ngIf="showFilterRow ">
-            <td *ngIf="tableRole === 'fulledit' || tableRole === 'viewdelete' || tableRole === 'view'" style="width:100px ">
+            <td *ngIf="(tableRole === 'fulledit' || tableRole === 'viewdelete' || tableRole === 'view') && showStatus === false" style="width:100px ">
             </td>
-            <td *ngIf="showStatus==true " style="width:100px ">
+            <td *ngIf="tableRole === 'fulledit' || tableRole === 'viewdelete' || tableRole === 'view'" style="width:100px ">
             </td>
 
             <td *ngFor="let column of columns ">
@@ -56,7 +54,7 @@
             <td *ngIf="editMode==true ">
                 <i [ngClass]="checkItems(row.ID) ? [ 'glyphicon glyphicon-unchecked text-danger'] : [ 'glyphicon glyphicon-check text-success'] " (click)="selectItem(row) "></i>
             </td>
-            <td *ngIf="tableRole === 'fulledit' || tableRole === 'viewdelete' || tableRole === 'view'">
+            <td *ngIf="(tableRole === 'fulledit' || tableRole === 'viewdelete' || tableRole === 'view') && showStatus === false">
                 <i *ngFor="let action of roleActions" [ngClass]="action.icon" [tooltip]="action.tooltip" (click)="customClick(action.name, row)" style="padding-left:5px">
                 </i>
             </td>
@@ -86,7 +84,7 @@
                         <h6> Metric:{{column.name}}</h6>
                         <hr/>
                     </ng-container>
-                    <div *ngFor="let test of (row.tooltipInfo[column.name] | objectParser) " style="text-align:left !important ">
+                    <div *ngFor="let test of (row.tooltipInfo[column.name] | objectParser ) " style="text-align:left !important ">
                         <span class="text-left " style="padding-left: 10px " *ngIf="test.value !==null || test.key==='CookedValue' "><b>{{test.key}}</b></span>
                         <span class="text-right " *ngIf="test.key==='CurTime' "> {{test.value | date:'d/M/y H:m:s'}}</span>
                         <span class="text-right " *ngIf="test.key==='LastTime' "> {{test.value | date:'d/M/y H:m:s'}}</span>

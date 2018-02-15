@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Input, Output, Pipe, PipeTransform,  } from '@angular/core';
+import { Component, EventEmitter, Input, Output, Pipe, PipeTransform } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { ElapsedSecondsPipe } from '../../../custom-pipe/elapsedseconds.pipe';
+import { ElapsedSecondsPipe } from '../../../custom-pipe/elapsedseconds.pipe'
+
 
 @Component({
   selector: 'ng-table',
@@ -15,19 +16,19 @@ import { ElapsedSecondsPipe } from '../../../custom-pipe/elapsedseconds.pipe';
 export class NgTableComponent {
   // Table values
   @Input() public rows: Array<any> = [];
-  @Input() public showRoleActions: boolean = true;
-
-  @Input() public roleActions: any;
-  @Input() public tableRole : string = 'fulledit';
-
+  @Input() public showCustom: boolean = false;
+  @Input() public showConnection: boolean = false;
   @Input() public showStatus: boolean = false;
   @Input() public editMode: boolean = false;
   @Input() public exportType: string;
   @Input() public extraActions: Array<any>;
   @Input() checkedItems: Array<any>;
   @Input() checkRows: Array<any>;
-  @Input() sanitizeCell: Function;
 
+  @Input() roleActions : any;
+  @Input() public tableRole : string = 'fulledit';
+
+  @Input() sanitizeCell: Function;
   @Input()
   public set config(conf: any) {
     if (!conf.className) {
@@ -42,9 +43,13 @@ export class NgTableComponent {
   // Outputs (Events)
   @Output() public tableChanged: EventEmitter<any> = new EventEmitter();
   @Output() public cellClicked: EventEmitter<any> = new EventEmitter();
-  @Output() public customClicked: EventEmitter<any> = new EventEmitter();
+  @Output() public viewedItem: EventEmitter<any> = new EventEmitter();
+  @Output() public editedItem: EventEmitter<any> = new EventEmitter();
+  @Output() public removedItem: EventEmitter<any> = new EventEmitter();
+  @Output() public exportedItem: EventEmitter<any> = new EventEmitter();
   @Output() public testedConnection: EventEmitter<any> = new EventEmitter();
   @Output() public extraActionClicked: EventEmitter<any> = new EventEmitter();
+  @Output() public customClicked: EventEmitter<any> = new EventEmitter();
 
   public showFilterRow: Boolean = false;
 
@@ -76,13 +81,13 @@ export class NgTableComponent {
 
   public sanitize(html: string, transform?: any ): SafeHtml {
 
-    let output: string
-    if (typeof this.sanitizeCell === "function" ) {
-      output = this.sanitizeCell(html,transform)
-      if ( output.length > 0 ) {
-        return output
+      let output: string
+      if (typeof this.sanitizeCell === "function" ) {
+        output = this.sanitizeCell(html,transform)
+        if ( output.length > 0 ) {
+          return output
+        }
       }
-    }
     if  (transform === "elapsedseconds") {
       let test = new ElapsedSecondsPipe().transform(html,'3');
       html = test.toString();
@@ -198,14 +203,26 @@ export class NgTableComponent {
   public cellClick(row: any, column: any): void {
     this.cellClicked.emit({ row, column });
   }
+  public viewItem(row: any): void {
+    this.viewedItem.emit(row);
+  }
+  public editItem(row: any): void {
+    this.editedItem.emit(row);
+  }
+  public removeItem(row: any): void {
+    this.removedItem.emit(row);
+  }
+  public exportItem(row: any, exportType : any) : void {
+    this.exportedItem.emit({row, exportType});
+  }
+  public testConnection(row: any) : void {
+    this.testedConnection.emit(row);
+  }
 
   public customClick(action: string, row: any) : void {
     this.customClicked.emit({'action' : action, 'row' : row});
   }
 
-  public testConnection(row: any) : void {
-    this.testedConnection.emit(row);
-  }
   public extraActionClick(row: any, action: any, property? : any) : void {
     this.extraActionClicked.emit({row , action, property});
   }
