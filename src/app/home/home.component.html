@@ -5,7 +5,7 @@
   </res-navbar>
 
   <div id="wrapper">
-    <res-sidemenu [menuItems]="menuItems" [mode]="mode" (showModal)="showAboutModal()" (clickMenu)="clickMenu($event)" (link)="link('https://github.com/adejoux/pSeriesCollector/wiki')">
+    <res-sidemenu [menuItems]="menuItems" [mode]="mode" (showModal)="showAboutModal()" (clickButton)="clickButton($event)" (clickMenu)="clickMenu($event)" (link)="link('https://github.com/adejoux/pSeriesCollector/wiki')">
     </res-sidemenu>
 
     <div id="page-content-wrapper" style="margin-bottom:50px" [ngStyle]="mode === true ? {'padding-left': '0px'} : {'padding-left' : '215px'}">

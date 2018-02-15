@@ -10,7 +10,6 @@ import { OnInit, OnChanges } from '@angular/core';
 import { ChangeDetectionStrategy } from '@angular/core';
 import { ChangeDetectorRef } from '@angular/core';
 
-
 declare var _: any;
 
 @Component({
@@ -22,6 +21,7 @@ declare var _: any;
     <div class="row">
     <div class="col-md-8 text-left">
     <!--Filtering section-->
+      <label [tooltip]="'Refresh'" container="body" style="margin-top:10px; border-right: 1px solid; padding-right: 5px;"><i class="glyphicon glyphicon-refresh" (click)="customClick('reload')"></i></label>
       <label [tooltip]="'Clear Filter'" container="body" (click)="onResetFilter()" style="margin-top: 10px"><i class="glyphicon glyphicon-trash text-primary"></i></label>
       <input *ngIf="config.filtering" placeholder="Filter all columns" required = "false" [(ngModel)]="myFilterValue" [ngTableFiltering]="config.filtering" class="form-control select-pages" (tableChanged)="onChangeTable(config)" />
       <span [ngClass]="length > 0 ? ['label label-info'] : ['label label-warning']" style="font-size : 100%">{{length}} Results</span>
@@ -35,11 +35,11 @@ declare var _: any;
       </div>
     <!--Items per page selection-->
     <div class="col-md-4 text-right">
-        <span style="margin-left: 20px"> Items per page: </span>
-        <select class="select-pages" style="width:auto" [ngModel]="itemsPerPage || 'All'" (ngModelChange)="changeItemsPerPage($event)">
-            <option *ngFor="let option of itemsPerPageOptions" style="padding-left:2px" [value]="option.value">{{option.title}}</option>
-        </select>
-      </div>
+      <span style="margin-left: 20px"> Items per page: </span>
+      <select class="select-pages" style="width:auto" [ngModel]="itemsPerPage || 'All'" (ngModelChange)="changeItemsPerPage($event)">
+        <option *ngFor="let option of itemsPerPageOptions" style="padding-left:2px" [value]="option.value">{{option.title}}</option>
+      </select>
+    </div>
     </div>
     <br>
     <!--Table available actions-->
@@ -51,6 +51,7 @@ declare var _: any;
       [columns]="columns"
       [sanitizeCell]="sanitizeCell"
       [config]="config"
+      [exportType]="typeComponent"
       [(checkedItems)]="selectedArray"
       [editMode]="editEnabled"
       (tableChanged)="onChangeTable(config)"
@@ -77,7 +78,7 @@ export class TableListComponent implements OnInit, OnChanges {
   @Input() counterErrors: any = [];
   @Input() selectedArray: any = [];
   @Input() isRequesting: boolean = false;
-
+  @Input() overrideEditEnabled : boolean = false;
   @Input() tableRole : any = 'fulledit';
   @Input() roleActions : any = [
     {'name':'export', 'type':'icon', 'icon' : 'glyphicon glyphicon-download-alt text-info', 'tooltip': 'Export item'},
@@ -87,6 +88,8 @@ export class TableListComponent implements OnInit, OnChanges {
   ]
 
   @Input() sanitizeCell: Function;
+  @Input() public tableAvailableActions: any;
+
   @Output() public customClicked: EventEmitter<any> = new EventEmitter();
 
   //Vars
@@ -98,7 +101,6 @@ export class TableListComponent implements OnInit, OnChanges {
   public maxSize: number = 5;
   public numPages: number = 1;
   public length: number = 0;
-  public tableAvailableActions: any;
   public myFilterValue: any;
 
   //Set config
@@ -113,7 +115,6 @@ export class TableListComponent implements OnInit, OnChanges {
     if (!this.data) this.data = [];
     this.onChangeTable(this.config);
     this.cd.markForCheck();
-
   }
 
   ngOnInit() {
@@ -127,12 +128,14 @@ export class TableListComponent implements OnInit, OnChanges {
   enableEdit() {
     this.editEnabled = !this.editEnabled;
     let obsArray = [];
-    this.tableAvailableActions = new AvailableTableActions(this.typeComponent).availableOptions;
+    if (this.editEnabled === true) {
+      if (this.overrideEditEnabled) this.customClick('editenabled',this.editEnabled);
+      else this.tableAvailableActions = new AvailableTableActions(this.typeComponent).availableOptions;
+    }
   }
 
   public changePage(page: any, data: Array<any> = this.data): Array<any> {
     //Check if we have to change the actual page
-
     let maxPage = Math.ceil(data.length / this.itemsPerPage);
     if (page.page > maxPage && page.page != 1) this.page = page.page = maxPage;
     let start = (page.page - 1) * page.itemsPerPage;
@@ -200,7 +203,6 @@ export class TableListComponent implements OnInit, OnChanges {
         if (item[column.name].toString().match(this.config.filtering.filterString)) {
           flag = true;
         }
-
       });
       if (flag) {
         tempArray.push(item);
@@ -218,6 +220,7 @@ export class TableListComponent implements OnInit, OnChanges {
   }
 
   public onChangeTable(config: any, page: any = { page: this.page, itemsPerPage: this.itemsPerPage }): any {
+
     if (config) {
       if (config.filtering) {
         Object.assign(this.config.filtering, config.filtering);

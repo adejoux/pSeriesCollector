@@ -1,0 +1,108 @@
+import { HttpService } from '../core/http.service';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs/Observable';
+
+declare var _:any;
+
+@Injectable()
+export class RuntimeService {
+
+    constructor(public httpAPI: HttpService) {
+    }
+
+
+    getRuntime(filter_s: string) {
+        // return an observable
+        return this.httpAPI.get('/api/rt/device/info')
+        .map( (responseData) => {
+            return responseData.json();
+        })
+        .map((runtime_devs) => {
+            let result = [];
+            if (runtime_devs) {
+                _.forEach(runtime_devs,function(value,key){
+                    let tmp : any = {};
+                  console.log("KEY: ",key);
+                  console.log("FOREACH LOOP",value,key);
+                  tmp.ID = key;
+                  _.forEach(value, function(val,key) {
+                     if (key == "Counters") {
+                        let i = 0;
+                         for (let a of val) {
+                             tmp['Counter'+i]=a;
+                             i++;
+                         }
+                     } else tmp[key] = val;
+                     if (key == "TagMap") {
+                         tmp['TagMap']=[];
+                         for (let a in val) {
+                             tmp['TagMap'].push(a+'='+val[a])
+                         }
+                     }
+                  });
+                  result.push(tmp);
+                  //result.push({'ID': key, 'value' :value});
+                });
+            }
+            console.log(result);
+            return result;
+        });
+    }
+
+    getRuntimeById(id : string) {
+        // return an observable
+        return this.httpAPI.get('/api/rt/device/info/'+id)
+        .map( (responseData) =>
+            responseData.json()
+    )};
+
+    changeDeviceActive(id : string, event : boolean) {
+        // return an observable
+        if (event) {
+            return this.httpAPI.put('/api/rt/device/status/activate/'+id,id)
+            .map( (responseData) =>
+                responseData.json()
+            )
+        } else {
+            return this.httpAPI.put('/api/rt/device/status/deactivate/'+id,id)
+            .map( (responseData) =>
+                responseData.json()
+            )
+        }
+    };
+
+    changeLogLevel(id : string, level: string) {
+        console.log(level);
+        // return an observable
+            return this.httpAPI.put('api/rt/device/log/setloglevel/'+id+'/'+level,[id,level])
+            .map( (responseData) =>
+                responseData.json()
+            )
+    };
+
+    downloadLogFile(id : string) {
+        // return an observable
+        return this.httpAPI.get('/api/rt/device/log/getdevicelog/'+id)
+        .map( (res) => {
+            console.log("service_response",res)
+            //return new Blob([res.arrayBuffer()],{type: "application/octet-stream" })
+            return new Blob([res['_body']],{type: "application/octet-stream" })
+        })
+    };
+
+    forceHMCReset(id : string, mode: string) {
+        // return an observable
+        return this.httpAPI.get('/api/rt/device/snmpreset/'+id+'/'+mode)
+        .map( (responseData) =>
+            responseData.json()
+        )
+    };
+
+    forceGatherData(id : string) {
+        // return an observable
+        return this.httpAPI.get('/api/rt/device/forcegather/'+id)
+        .map( (responseData) =>
+            responseData.json()
+        )
+    };
+}

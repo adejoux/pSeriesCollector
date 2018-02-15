@@ -107,8 +107,12 @@ export class HMCServerComponent implements OnInit {
 
   customActions(action : any) {
     switch (action.option) {
+      case 'reload' :
+      this.reloadData();
+      break;
       case 'new' :
         this.newItem()
+      break;
       case 'view':
         this.viewItem(action.event);
       break;

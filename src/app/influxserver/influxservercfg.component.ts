@@ -133,11 +133,15 @@ export class InfluxServerCfgComponent {
 
   customActions(action : any) {
     switch (action.option) {
+      case 'reload' :
+        this.reloadData();
+      break;
       case 'export' : 
         this.exportItem(action.event);
       break;
       case 'new' :
         this.newInfluxServer()
+      break;
       case 'view':
         this.viewItem(action.event);
       break;

@@ -33,7 +33,6 @@ export class NgTableSortingDirective {
           this.column.sort = 'asc';
           break;
       }
-      console.log("TEST");
 
       this.sortChanged.emit(this.column);
     }

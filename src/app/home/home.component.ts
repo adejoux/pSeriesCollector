@@ -12,10 +12,9 @@ import { WindowRef } from '../common/windowref';
 //Menu Components  to load them dynamically
 import { HMCServerComponent } from '../hmcserver/hmcserver.component';
 import { InfluxServerCfgComponent } from '../influxserver/influxservercfg.component';
+import { RuntimeComponent } from '../runtime/runtime.component';
 import { NavbarComponent } from './navbar/navbar.component';
 import { SideMenuComponent } from './sidemenu/sidemenu.component';
-
-
 
 declare var _:any;
 
@@ -40,29 +39,33 @@ export class HomeComponent {
   menuItems : Array<any> = [
   {'groupName' : 'Runtime', 'icon': 'glyphicon glyphicon-play', 'expanded': true, 'items':
     [
-      {'title': 'Agent status', 'selector' : 'runtime', 'component': null}
+      {'title': 'Agent status', 'selector' : 'runtime-component', 'type' : 'component', 'data': RuntimeComponent}
     ]
   },
-  {'groupName' : 'Server Config', 'icon': 'glyphicon glyphicon-play', 'expanded': true, 'items':
+  {'groupName' : 'Server Config', 'icon': 'glyphicon glyphicon-cog', 'expanded': true, 'items':
   [
-    {'title': 'Influx DB Servers ', 'selector' : 'ifxserver-component', 'component': InfluxServerCfgComponent},
-    {'title': 'HMC Servers', 'selector' : 'hmcserver-component', 'component': HMCServerComponent},
+    {'title': 'Influx DB Servers ', 'selector' : 'ifxserver-component', 'type': 'component', 'data': InfluxServerCfgComponent},
+    {'title': 'HMC Servers', 'selector' : 'hmcserver-component', 'type': 'component', 'data': HMCServerComponent},
   ]
+  },
+  {'groupName' : 'Actions', 'icon': 'glyphicon glyphicon-refresh', 'expanded': true, 'items':
+   [
+     {'title': 'Reload Config', 'type': 'button', 'data': 'reload'}
+   ]
   }];
 
 
-  componentList = HMCServerComponent;
-
   mode : boolean = false;
   userIn : boolean = false;
-
+  componentList = null;
   elapsedReload: string = '';
   lastReload: Date;
 
-  constructor(private winRef: WindowRef,public router: Router, private _blocker: BlockUIService, public homeService: HomeService) {
+  constructor(private winRef: WindowRef,public router: Router, public _blocker: BlockUIService, public homeService: HomeService) {
     this.nativeWindow = winRef.nativeWindow;
     this.getFooterInfo();
-    this.item_type= "kapacitor-component";
+    this.componentList = RuntimeComponent;
+    this.item_type= "runtime-component";
   }
 
   link(url: string) {
@@ -91,7 +94,15 @@ export class HomeComponent {
   }
 
   clickMenu(menuItem : any) : void {
-    this.componentList = menuItem.component;
+    this.componentList = menuItem.data;
+  }
+
+  clickButton(menuItem : any) : void {
+    switch (menuItem.data) {
+      case 'reload':
+        this.reloadConfig();
+      break;
+    }
   }
 
   showImportModal() {
