@@ -150,6 +150,18 @@
                                         </div>
                                     </div>
                                 </li>
+                                <!--  SNMP Protocol Debug -->
+                                <li class="list-group-item">
+                                    <div class="row">
+                                        <div class="col-md-7 text-left">
+                                            <span>HMC HTTP API Debug</span>
+                                            <span class="glyphicon glyphicon-question-sign" tooltip="Enable or disable the HMC API Debug (only online not saved in the configuration database)"></span>
+                                        </div>
+                                        <div class="col-md-5 text-right">
+                                            <button type="button" (click)="runtime_dev.StateDebug ? changeStateDebug(runtime_dev.ID,false) : changeStateDebug(runtime_dev.ID,true)" [ngClass]="runtime_dev.StateDebug ? 'btn btn-danger' : 'btn btn-success'">{{runtime_dev.StateDebug ? 'Disable' : 'Enable'}}</button>
+                                        </div>
+                                    </div>
+                                </li>
                                 <!--  Force Snmp Reset -->
                                 <li class="list-group-item">
                                     <div class="row">

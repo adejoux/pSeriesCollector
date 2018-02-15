@@ -36,7 +36,7 @@ func SetLogDir(l string) {
 
 // HMCServer contains all runtime device related device configu ns and state
 type HMCServer struct {
-	Session *hmcpcm.Session
+	Session *hmcpcm.Session `json:"-"`
 	cfg     *config.HMCCfg
 	log     *logrus.Logger
 	//runtime built TagMap
@@ -67,11 +67,18 @@ type HMCServer struct {
 }
 
 // Ping get data from hmc
-func Ping(c *config.HMCCfg) (*hmcpcm.Session, time.Duration, string, error) {
+func Ping(c *config.HMCCfg, log *logrus.Logger) (*hmcpcm.Session, time.Duration, string, error) {
 	HMCURL := fmt.Sprintf("https://"+"%s"+":12443", c.Host)
 	start := time.Now()
-	Session := hmcpcm.NewSession(HMCURL, c.User, c.Password)
-	err := Session.DoLogon()
+	Session, err := hmcpcm.NewSession(HMCURL, c.User, c.Password)
+	if err != nil {
+		return nil, 0, "error", err
+	}
+	if log != nil {
+		Session.SetLog(log)
+	}
+
+	err = Session.DoLogon()
 	if err != nil {
 		return nil, 0, "error", err
 	}
@@ -150,11 +157,6 @@ func (d *HMCServer) ForceGather() {
 	d.Node.SendMsg(&bus.Message{Type: "forcegather"})
 }
 
-// ForceFltUpdate send info to update the filter counter to the next execution
-func (d *HMCServer) ForceFltUpdate() {
-	d.Node.SendMsg(&bus.Message{Type: "filterupdate"})
-}
-
 // StopGather send signal to stop the Gathering process
 func (d *HMCServer) StopGather() {
 	d.Node.SendMsg(&bus.Message{Type: "exit"})
@@ -163,6 +165,11 @@ func (d *HMCServer) StopGather() {
 //RTActivate change activatio state in runtime
 func (d *HMCServer) RTActivate(activate bool) {
 	d.Node.SendMsg(&bus.Message{Type: "enabled", Data: activate})
+}
+
+//RTActHMCAPIDebug change HMC Session Debug runtime
+func (d *HMCServer) RTActHMCAPIDebug(activate bool) {
+	d.Node.SendMsg(&bus.Message{Type: "hmcapidebug", Data: activate})
 }
 
 // RTSetLogLevel set the log level for this device
@@ -228,7 +235,6 @@ func (d *HMCServer) Init(c *config.HMCCfg) error {
 		return fmt.Errorf("Error on initialice device, configuration struct is nil")
 	}
 	d.cfg = c
-	//log.Infof("Initializing device %s\n", d.cfg.ID)
 
 	//Init Freq
 	d.Freq = d.cfg.Freq
@@ -340,7 +346,7 @@ func (d *HMCServer) Reconnect() error {
 	var id string
 	var err error
 	d.Debugf("Trying Reconnect again....")
-	d.Session, t, id, err = Ping(d.cfg)
+	d.Session, t, id, err = Ping(d.cfg, d.log)
 	if err != nil {
 		d.Errorf("Error on HMC connection %s", err)
 		return err
@@ -383,6 +389,7 @@ func (d *HMCServer) gatherAndProcessData(t *time.Ticker, force bool) *time.Ticke
 			//try reconnect
 			err := d.Reconnect()
 			if err == nil {
+				d.DeviceConnected = true
 				//REVIEW perhaps not needed here
 				d.InitDevMeasurements()
 
@@ -468,6 +475,17 @@ func (d *HMCServer) startGatherGo(wg *sync.WaitGroup) {
 				case "exit":
 					d.Infof("invoked EXIT from HMC Gather process ")
 					return
+				case "hmcapidebug":
+					debug := val.Data.(bool)
+					if d.DeviceConnected == true {
+						d.rtData.Lock()
+						d.StateDebug = debug
+						d.Session.Debug = debug
+						d.Session.SetDebugLog(d.cfg.ID)
+						d.rtData.Unlock()
+					} else {
+						d.Warnf("Device not connected we can not set debug yet")
+					}
 
 				case "enabled":
 					status := val.Data.(bool)

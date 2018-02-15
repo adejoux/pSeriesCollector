@@ -456,6 +456,20 @@ export class RuntimeComponent implements OnDestroy {
       );
   }
 
+
+  changeStateDebug(id, event) {
+    console.log("ID,event", id, event);
+    this.runtimeService.changeStateDebug(id, event)
+      .subscribe(
+      data => {
+        this.runtime_dev.StateDebug = !this.runtime_dev.StateDebug;
+      },
+      err => console.error(err),
+      () => console.log('DONE')
+      );
+  }
+
+
   reloadData() {
     this.itemsPerPage = 20;
     this.isRequesting = true;

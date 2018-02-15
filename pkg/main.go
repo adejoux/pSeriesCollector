@@ -161,9 +161,9 @@ func init() {
 
 	impexp.SetLogger(log)
 	bus.SetLogger(log)
-	hmcpcm.SetLogger(log)
 
-	//
+	hmcpcm.SetLogDir(logDir)
+
 	log.Infof("Set Default directories : \n   - Exec: %s\n   - Config: %s\n   -Logs: %s\n -Home: %s\n", appdir, confDir, logDir, homeDir)
 }
 

@@ -90,6 +90,22 @@ export class RuntimeService {
         })
     };
 
+    changeStateDebug(id : string, event : boolean) {
+        // return an observable
+        if (event) {
+            return this.httpAPI.put('/api/rt/device/debug/activate/'+id,id)
+            .map( (responseData) =>
+                responseData.json()
+            )
+        } else {
+            return this.httpAPI.put('/api/rt/device/debug/deactivate/'+id,id)
+            .map( (responseData) =>
+                responseData.json()
+            )
+        }
+    };
+
+
     forceHMCReset(id : string, mode: string) {
         // return an observable
         return this.httpAPI.get('/api/rt/device/snmpreset/'+id+'/'+mode)

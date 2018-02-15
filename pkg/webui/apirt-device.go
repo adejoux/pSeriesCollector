@@ -18,14 +18,12 @@ func NewAPIRtDevice(m *macaron.Macaron) error {
 		m.Get("/info/:id", reqSignedIn, RTGetInfo)
 		m.Put("/status/activate/:id", reqSignedIn, RTActivateDev)
 		m.Put("/status/deactivate/:id", reqSignedIn, RTDeactivateDev)
-		//m.Put("/debug/activate/:id", reqSignedIn, RTActSnmpDebugDev)
-		//m.Put("/debug/deactivate/:id", reqSignedIn, RTDeactSnmpDebugDev)
+		m.Put("/debug/activate/:id", reqSignedIn, RTActHMCAPIDebugDev)
+		m.Put("/debug/deactivate/:id", reqSignedIn, RTDeactHMCAPIDebugDev)
 		//m.Get("/snmpreset/:id/:mode", reqSignedIn, RTSnmpReset)
 		m.Get("/forcegather/:id", reqSignedIn, RTForceGather)
 		m.Put("/log/setloglevel/:id/:level", reqSignedIn, RTSetLogLevelDev)
 		m.Get("/log/getdevicelog/:id", reqSignedIn, RTGetLogFileDev)
-		m.Get("/filter/forcefltupdate/:id", reqSignedIn, RTForceFltUpdate)
-		//m.Get("/snmpmaxrep/:id/:maxrep", reqSignedIn, RTSnmpSetMaxRep)
 	})
 
 	return nil
@@ -34,34 +32,6 @@ func NewAPIRtDevice(m *macaron.Macaron) error {
 /****************/
 /*Runtime Info
 /****************/
-
-// RTSnmpSetMaxRep runtime set max repeticions
-/*func RTSnmpSetMaxRep(ctx *Context) {
-	id := ctx.Params(":id")
-	maxrep := ctx.Params(":maxrep")
-	d, err := agent.GetDevice(id)
-	if err != nil {
-		ctx.JSON(404, err.Error())
-		return
-	}
-	log.Infof("set maxrepetitions for snmp device %s", id)
-	i, _ := strconv.Atoi(maxrep)
-	d.RTActSnmpMaxRep(uint8(i))
-	ctx.JSON(200, "OK")
-}*/
-
-// RTForceFltUpdate xx
-func RTForceFltUpdate(ctx *Context) {
-	id := ctx.Params(":id")
-	d, err := agent.GetDevice(id)
-	if err != nil {
-		ctx.JSON(404, err.Error())
-		return
-	}
-	log.Infof("trying to force filter for device %s", id)
-	d.ForceFltUpdate()
-	ctx.JSON(200, "OK")
-}
 
 // RTGetLogFileDev get file dev
 func RTGetLogFileDev(ctx *Context) {
@@ -145,9 +115,8 @@ func RTDeactivateDev(ctx *Context) {
 
 }
 
-/*
-//RTActSnmpDebugDev xx
-func RTActSnmpDebugDev(ctx *Context) {
+//RTActHMCAPIDebugDev xx
+func RTActHMCAPIDebugDev(ctx *Context) {
 	id := ctx.Params(":id")
 	dev, err := agent.GetDevice(id)
 	if err != nil {
@@ -155,12 +124,12 @@ func RTActSnmpDebugDev(ctx *Context) {
 		return
 	}
 	log.Infof("activating snmpdebug  %s", id)
-	dev.RTActSnmpDebug(true)
+	dev.RTActHMCAPIDebug(true)
 	ctx.JSON(200, "OK")
-}*/
-/*
-//RTDeactSnmpDebugDev xx
-func RTDeactSnmpDebugDev(ctx *Context) {
+}
+
+//RTDeactHMCAPIDebugDev xx
+func RTDeactHMCAPIDebugDev(ctx *Context) {
 	id := ctx.Params(":id")
 	dev, err := agent.GetDevice(id)
 	if err != nil {
@@ -168,9 +137,9 @@ func RTDeactSnmpDebugDev(ctx *Context) {
 		return
 	}
 	log.Infof("deactivating snmpdebug  %s", id)
-	dev.RTActSnmpDebug(false)
+	dev.RTActHMCAPIDebug(false)
 	ctx.JSON(200, "OK")
-}*/
+}
 
 //RTGetInfo xx
 func RTGetInfo(ctx *Context) {

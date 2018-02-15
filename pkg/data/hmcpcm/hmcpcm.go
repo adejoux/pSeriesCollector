@@ -2,15 +2,32 @@ package hmcpcm
 
 import (
 	"github.com/Sirupsen/logrus"
+	"net/http"
 )
 
 var (
-	log *logrus.Logger
+	logDir string
 )
 
-//mutex for devices m
+// SetLogDir xx
+func SetLogDir(dir string) {
+	logDir = dir
+}
 
-// SetLogger set log output
-func SetLogger(l *logrus.Logger) {
-	log = l
+// Logger interface
+type Logger interface {
+	Print(v ...interface{})
+	Printf(format string, v ...interface{})
+}
+
+// Session is the HTTP session struct
+type Session struct {
+	client   *http.Client
+	User     string
+	Password string
+	url      string
+	Debug    bool
+	samples  int
+	slog     *logrus.Logger // The sytem Log
+	dlog     Logger         // The debug log
 }

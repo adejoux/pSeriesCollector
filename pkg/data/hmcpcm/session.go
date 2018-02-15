@@ -10,10 +10,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
-	"net/http/httputil"
 	"net/url"
 	"text/template"
 	"time"
+
+	"github.com/Sirupsen/logrus"
 )
 
 //
@@ -62,16 +63,6 @@ type Link struct {
 	Href string `xml:"href,attr"`
 }
 
-// Session is the HTTP session struct
-type Session struct {
-	client   *http.Client
-	User     string
-	Password string
-	url      string
-	Debug    bool
-	samples  int
-}
-
 // System struct store system Name and UUID
 type System struct {
 	Name string
@@ -81,21 +72,39 @@ type System struct {
 const timeout = 30
 
 // NewSession initialize a Session struct
-func NewSession(url string, user string, password string) *Session {
+func NewSession(url string, user string, password string) (*Session, error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return &Session{client: &http.Client{Transport: tr, Jar: jar, Timeout: time.Second * timeout}, User: user, Password: password, url: url}
+	return &Session{client: &http.Client{Transport: tr, Jar: jar, Timeout: time.Second * timeout}, User: user, Password: password, url: url}, nil
 }
 
+// SetLog set logger the session
+func (s *Session) SetLog(l *logrus.Logger) {
+	s.slog = l
+}
+
+// SetDebugLog set filename for log
+func (s *Session) SetDebugLog(filename string) {
+
+	l, err := GetDebugLogger(filename)
+	if err != nil {
+		s.Errorf("ERROR on create HMC API debug file %s ", err)
+	}
+	s.dlog = l
+
+}
+
+//Release session
 func (s *Session) Release() {
 	//do nothing right now
+	// We should do DELETE to release the session https://www.ibm.com/support/knowledgecenter/POWER8/p8ehl/apis/Logon.htm
 }
 
 // SetSamples SetCurrent Samples
@@ -136,11 +145,16 @@ func (s *Session) DoLogon() error {
 	request.Header.Set("Accept", "application/vnd.ibm.powervm.web+xml; type=LogonResponse")
 	request.Header.Set("X-Audit-Memento", "hmctest")
 
+	s.Infof("HTTPREQ PUT: %s", authurl)
+	s.PrintHTTPRequest(request)
 	response, err := s.client.Do(request)
 	if err != nil {
 		return fmt.Errorf("HMC error sending auth request: %v", err)
 	}
 	defer response.Body.Close()
+	s.PrintHTTPResponse(response)
+	contents, _ := ioutil.ReadAll(response.Body)
+	s.PrintHTTPContent(contents)
 	if response.StatusCode != 200 {
 		return fmt.Errorf("HMC authentication error: %s", response.Status)
 	}
@@ -177,18 +191,14 @@ func (s *Session) GetPartitionPCMLinks(link string) (PCMLinks, error) {
 }
 
 func (s *Session) getPCMLinks(link string) (PCMLinks, error) {
-	if s.Debug {
-		log.Printf("getPCMLinks link: %s\n", link)
-	}
+
 	var pcmlinks PCMLinks
 	request, _ := http.NewRequest("GET", link, nil)
 
 	request.Header.Set("Accept", "*/*;q=0.8")
 
-	if s.Debug {
-		log.Printf("getPCMLinks HTTP request: ")
-		log.Printf(SPrintHTTPRequest(request))
-	}
+	s.Infof("HTTPREQ GET %s", link)
+	s.PrintHTTPRequest(request)
 	response, requestErr := s.client.Do(request)
 	if requestErr != nil {
 		return pcmlinks, requestErr
@@ -198,23 +208,24 @@ func (s *Session) getPCMLinks(link string) (PCMLinks, error) {
 	if response.StatusCode != 200 {
 		errorMessage := fmt.Sprintf("Error getting PCM informations. status code: %d", response.StatusCode)
 		statusErr := errors.New(errorMessage)
-		if s.Debug {
-			log.Printf("getPCMLinks HTTP response: ")
-			log.Printf(SPrintHTTPResponse(response))
-		}
 		return pcmlinks, statusErr
 	}
+	s.PrintHTTPResponse(response)
 
 	var feed Feed
 	contents, readErr := ioutil.ReadAll(response.Body)
 	if readErr != nil {
+		s.Errorf("ERROR  on read Body: %s", readErr)
 		return pcmlinks, readErr
 	}
+	s.PrintHTTPContentXML(contents)
 	unmarshalErr := xml.Unmarshal(contents, &feed)
 
 	if unmarshalErr != nil {
+		s.Errorf("ERROR  on Unmarshall Body: %s", unmarshalErr)
 		return pcmlinks, unmarshalErr
 	}
+
 	for _, entry := range feed.Entries {
 		if len(entry.Category.Term) == 0 {
 			continue
@@ -241,11 +252,10 @@ func (s *Session) getPCMData(rawurl string) (PCMData, error) {
 	var data PCMData
 	u, _ := url.Parse(rawurl)
 	pcmurl := s.url + u.Path
-	if s.Debug {
-		log.Printf("getPCMData link:%s\n", pcmurl)
-	}
-	request, _ := http.NewRequest("GET", pcmurl, nil)
 
+	request, _ := http.NewRequest("GET", pcmurl, nil)
+	s.Infof("HTTPREQ GET %s", pcmurl)
+	s.PrintHTTPRequest(request)
 	response, err := s.client.Do(request)
 	if err != nil {
 		return data, err
@@ -254,26 +264,20 @@ func (s *Session) getPCMData(rawurl string) (PCMData, error) {
 
 	contents, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		if s.Debug {
-			log.Printf("getPCMData response: ")
-			log.Printf(SPrintHTTPResponse(response))
-		}
+		s.PrintHTTPResponse(response)
 		return data, err
 	}
 
-	if s.Debug {
-		log.Printf("getPCMData JSON: ")
-		log.Printf(SPrintPrettyJSON(contents))
-	}
+	s.PrintHTTPContentJSON(contents)
 
 	if response.StatusCode != 200 {
-		log.Fatalf("Error getting PCM Data informations. status code: %d", response.StatusCode)
+		s.Errorf("Error getting PCM Data informations. status code: %d", response.StatusCode)
 	}
 
 	jsonErr := json.Unmarshal(contents, &data)
 
 	if jsonErr != nil {
-		log.Printf(SPrintPrettyJSON(contents))
+		s.Errorf("ERROR on Json Unmarshall: %s", jsonErr)
 	}
 	return data, jsonErr
 
@@ -290,7 +294,8 @@ func (s *Session) getManagedSystems() (systems []System, err error) {
 	request, _ := http.NewRequest("GET", mgdurl, nil)
 
 	request.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-
+	s.Infof("HTTPREQ GET %s", mgdurl)
+	s.PrintHTTPRequest(request)
 	response, err := s.client.Do(request)
 	if err != nil {
 		return nil, err
@@ -303,8 +308,10 @@ func (s *Session) getManagedSystems() (systems []System, err error) {
 	}
 
 	if response.StatusCode != 200 {
-		log.Fatalf("Error getting LPAR informations. status code: %d", response.StatusCode)
+		s.Errorf("Error getting LPAR informations. status code: %d", response.StatusCode)
 	}
+
+	s.PrintHTTPContent(contents)
 
 	var feed Feed
 	newErr := xml.Unmarshal(contents, &feed)
@@ -322,36 +329,4 @@ func (s *Session) getManagedSystems() (systems []System, err error) {
 	}
 
 	return
-}
-
-//
-func SPrintHTTPResponse(response *http.Response) string {
-	responseDump, err := httputil.DumpResponse(response, true)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return string(responseDump)
-}
-
-func SPrintHTTPRequest(request *http.Request) string {
-	requestDump, err := httputil.DumpRequest(request, true)
-	if err != nil {
-		log.Println(err)
-	}
-	return string(requestDump)
-}
-
-func SPrintPrettyJSON(contents []byte) string {
-	text := GetPrettyJSON(contents)
-	return string(text.Bytes())
-}
-
-func GetPrettyJSON(contents []byte) bytes.Buffer {
-	var prettyJSON bytes.Buffer
-	error := json.Indent(&prettyJSON, contents, "", "\t")
-	if error != nil {
-		log.Println("JSON parse error: ", error)
-	}
-
-	return prettyJSON
 }
