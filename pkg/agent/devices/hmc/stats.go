@@ -13,23 +13,23 @@ type DevStatType uint
 
 const (
 	// MetricSent all values had been sent (measurment fields -- could be from OID's or from computed, evaluated, sources)
-	MetricSent = 1
+	MetricSent = 0
 	// MetricSentErrors values that has errors when trying to add to a measurement
-	MetricSentErrors = 2
+	MetricSentErrors = 1
 	// MeasurementSent all measurements sent to the influx backend
-	MeasurementSent = 3
+	MeasurementSent = 2
 	// MeasurementSentErrors all measurements with errors
-	MeasurementSentErrors = 4
+	MeasurementSentErrors = 3
 	// CycleGatherStartTime Time which begins the last Gather Cycle
-	CycleGatherStartTime = 5
+	CycleGatherStartTime = 4
 	// CycleGatherDuration Time taken in complete the last gather and sent cycle
-	CycleGatherDuration = 6
+	CycleGatherDuration = 5
 	// BackEndSentStartTime Time witch begins the last sent process
-	BackEndSentStartTime = 7
+	BackEndSentStartTime = 6
 	// BackEndSentDuration Time taken in complete the data sent process
-	BackEndSentDuration = 8
+	BackEndSentDuration = 7
 	// DevStatTypeSize special value to set the last stat position
-	DevStatTypeSize = 9
+	DevStatTypeSize = 8
 )
 
 // DevStat minimal info to show users
