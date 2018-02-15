@@ -14,8 +14,10 @@
       <ng-container>
         <div class="row well well-sm">
           <h4 style="display:inline"><i class="glyphicon glyphicon-cog text-info"></i> {{ editmode | uppercase}}</h4>
-          <div style="display:inline" tooltip='Test Connection' container=body><button class="btn btn-info" type="button" (click)="testHMCServerConnection(sampleComponentForm.value)" [disabled]="!sampleComponentForm.valid"> <i class="glyphicon glyphicon-flash"></i></button></div>
           <div class="pull-right" style="margin-right: 20px">
+            <div style="display:inline" tooltip='Test Connection' container=body>
+                <button class="btn btn-info" type="button" (click)="testHMCServerConnection(sampleComponentForm.value)" [disabled]="!sampleComponentForm.valid"> <i class="glyphicon glyphicon-flash"></i></button>
+            </div>
             <div style="display:inline" tooltip='Submit' container=body>
               <button class="btn btn-success" type="submit" [disabled]="!sampleComponentForm.valid"> <i class="glyphicon glyphicon-ok-circle"></i></button>
             </div>
