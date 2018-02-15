@@ -5,6 +5,7 @@ import { Observable } from 'rxjs/Observable';
 import { BlockUIService } from '../common/blockui/blockui-service';
 import { BlockUIComponent } from '../common/blockui/blockui-component';
 import { ImportFileModal } from '../common/dataservice/import-file-modal';
+import { ExportFileModal } from '../common/dataservice/export-file-modal';
 import { HomeService } from './home.service';
 import { AboutModal } from './about-modal'
 import { WindowRef } from '../common/windowref';
@@ -29,6 +30,8 @@ export class HomeComponent {
 
   @ViewChild('blocker', { read: ViewContainerRef }) container: ViewContainerRef;
   @ViewChild('importFileModal') public importFileModal : ImportFileModal;
+  @ViewChild('exportBulkFileModal') public exportBulkFileModal : ExportFileModal;
+
   @ViewChild('aboutModal') public aboutModal : AboutModal;
   @ViewChild('RuntimeComponent') public rt : any;
 
@@ -46,6 +49,12 @@ export class HomeComponent {
   [
     {'title': 'Influx DB Servers ', 'selector' : 'ifxserver-component', 'type': 'component', 'data': InfluxServerCfgComponent},
     {'title': 'HMC Servers', 'selector' : 'hmcserver-component', 'type': 'component', 'data': HMCServerComponent},
+  ]
+  },
+  {'groupName' : 'Data Service', 'icon': 'glyphicon glyphicon-paste', 'expanded': true, 'items':
+  [
+    {'title': 'Export Data ', 'selector' : 'ifxserver-component', 'type': 'button', 'data': 'exportdata'},
+    {'title': 'Import Data', 'selector' : 'hmcserver-component', 'type': 'button', 'data': 'importdata'},
   ]
   },
   {'groupName' : 'Actions', 'icon': 'glyphicon glyphicon-refresh', 'expanded': true, 'items':
@@ -102,6 +111,12 @@ export class HomeComponent {
       case 'reload':
         this.reloadConfig();
       break;
+      case 'importdata':
+        this.showImportModal();
+      break;
+      case 'exportdata':
+        this.showExportBulkModal();
+      break;
     }
   }
 
@@ -110,7 +125,7 @@ export class HomeComponent {
   }
 
   showExportBulkModal() {
-    //this.exportBulkFileModal.initExportModal(null, false);
+    this.exportBulkFileModal.initExportModal(null, false);
   }
 
   showAboutModal() {

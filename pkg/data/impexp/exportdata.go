@@ -2,10 +2,11 @@ package impexp
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/adejoux/pSeriesCollector/pkg/agent"
 	"github.com/adejoux/pSeriesCollector/pkg/config"
-	"time"
 )
 
 var (
@@ -29,6 +30,7 @@ func SetLogger(l *logrus.Logger) {
 	log = l
 }
 
+// ExportInfo Main export Data type
 type ExportInfo struct {
 	FileName      string
 	Description   string
@@ -39,12 +41,14 @@ type ExportInfo struct {
 	CreationDate  time.Time
 }
 
+// EIOptions export/import options
 type EIOptions struct {
 	Recursive   bool   //Export Option
 	AutoRename  bool   //Import Option
 	AlternateID string //Import Option
 }
 
+// ExportObject Base type for any object to export
 type ExportObject struct {
 	ObjectTypeID string
 	ObjectID     string
@@ -60,6 +64,7 @@ type ExportData struct {
 	tmpObjects []*ExportObject //only for temporal use
 }
 
+// NewExport ExportData type creator
 func NewExport(info *ExportInfo) *ExportData {
 	if len(agent.Version) > 0 {
 		info.AgentVersion = agent.Version
@@ -83,6 +88,7 @@ func checkIfExistOnArray(list []*ExportObject, ObjType string, id string) bool {
 	return false
 }
 
+// PrependObject prepend a new object to the ExportData type
 func (e *ExportData) PrependObject(obj *ExportObject) {
 	if checkIfExistOnArray(e.Objects, obj.ObjectTypeID, obj.ObjectID) == true {
 		return
@@ -90,6 +96,7 @@ func (e *ExportData) PrependObject(obj *ExportObject) {
 	e.tmpObjects = append([]*ExportObject{obj}, e.tmpObjects...)
 }
 
+// UpdateTmpObject update temporaty object
 func (e *ExportData) UpdateTmpObject() {
 	//we need remove duplicated objects on the auxiliar array
 	objectList := []*ExportObject{}
@@ -105,38 +112,26 @@ func (e *ExportData) UpdateTmpObject() {
 
 // Export  exports data
 func (e *ExportData) Export(ObjType string, id string, recursive bool, level int) error {
-
 	switch ObjType {
-	case "xxxxx":
-		/*contains sensible data
-		v, err := dbc.GetSnmpDeviceCfgByID(id)
+	case "hmcservercfg":
+		//contains sensible data
+		v, err := dbc.GetHMCCfgByID(id)
 		if err != nil {
 			return err
 		}
-		e.PrependObject(&ExportObject{ObjectTypeID: "snmpdevicecfg", ObjectID: id, ObjectCfg: v})
+		e.PrependObject(&ExportObject{ObjectTypeID: "hmcservercfg", ObjectID: id, ObjectCfg: v})
 		if !recursive {
 			break
 		}
-		for _, val := range v.MeasurementGroups {
-			e.Export("measgroupcfg", val, recursive, level+1)
-		}
-		for _, val := range v.MeasFilters {
-			e.Export("measfiltercfg", val, recursive, level+1)
-		}
-		e.Export("influxcfg", v.OutDB, recursive, level+1)*/
-	case "yyyyy":
-		/*contains sensible probable
+		e.Export("influxcfg", v.OutDB, recursive, level+1)
+	case "influxcfg":
 		v, err := dbc.GetInfluxCfgByID(id)
 		if err != nil {
 			return err
 		}
-		e.PrependObject(&ExportObject{ObjectTypeID: "influxcfg", ObjectID: id, ObjectCfg: v})*/
-	case "zzzzz":
-		//
-	case "aaaaa":
-		//
+		e.PrependObject(&ExportObject{ObjectTypeID: "influxcfg", ObjectID: id, ObjectCfg: v})
 	default:
-		return fmt.Errorf("Unknown type obje$$$ type %s ", ObjType)
+		return fmt.Errorf("Unknown type object type %s ", ObjType)
 	}
 	if level == 0 {
 		e.UpdateTmpObject()

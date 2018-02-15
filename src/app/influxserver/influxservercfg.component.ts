@@ -140,13 +140,13 @@ export class InfluxServerCfgComponent {
         this.exportItem(action.event);
       break;
       case 'new' :
-        this.newInfluxServer()
+        this.newItem()
       break;
       case 'view':
         this.viewItem(action.event);
       break;
       case 'edit':
-        this.editInfluxServer(action.event);
+        this.editItem(action.event);
       break;
       case 'remove':
         this.removeItem(action.event);
@@ -192,13 +192,13 @@ export class InfluxServerCfgComponent {
       () => { }
       );
   }
-  newInfluxServer() {
+  newItem() {
     //No hidden fields, so create fixed Form
     this.createStaticForm();
     this.editmode = "create";
   }
 
-  editInfluxServer(row) {
+  editItem(row) {
     let id = row.ID;
     this.influxServerService.getInfluxServerById(id)
       .subscribe(data => {

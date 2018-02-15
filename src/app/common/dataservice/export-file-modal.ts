@@ -47,7 +47,7 @@ import { Subscription } from 'rxjs';
                     </div>
                     <div dropdown class="text-left" style="margin-top: 10px">
                     <span class="dropdown-toggle-split">Filter by</span>
-                    <ss-multiselect-dropdown style="border: none" class="text-primary" [options]="listFilterProp" [texts]="myTexts" [settings]="propSettings" [(ngModel)]="selectedFilterProp" (ngModelChange)="onChange(filter)"></ss-multiselect-dropdown>
+                    <ss-multiselect-dropdown style="border: none" [options]="listFilterProp" [texts]="myTexts" [settings]="propSettings" [(ngModel)]="selectedFilterProp" (ngModelChange)="onChange(filter)"></ss-multiselect-dropdown>
                       <input type=text [(ngModel)]="filter" placeholder="Filter items..." (ngModelChange)="onChange($event)">
                       <label [tooltip]="'Clear Filter'" container="body" (click)="filter=''; onChange(filter)"><i class="glyphicon glyphicon-trash text-primary"></i></label>
                     </div>
@@ -216,15 +216,8 @@ export class ExportFileModal {
   filter : any = "";
   //Bulk Objects
   public objectTypes : any = [
-   {'Type':"devicecfg", 'Class' : 'danger', 'Visible': false},
+   {'Type':"hmcservercfg", 'Class' : 'danger', 'Visible': false},
    {'Type':"influxcfg" ,'Class' : 'info', 'Visible': false},
-   {'Type':"measfiltercfg", 'Class' : 'warning','Visible': false},
-   {'Type':"oidconditioncfg", 'Class' : 'success', 'Visible': false},
-   {'Type':"customfiltercfg", 'Class' : 'default', 'Visible': false},
-   {'Type':"measurementcfg", 'Class' : 'primary', 'Visible': false},
-   {'Type':"metriccfg", 'Class' : 'warning', 'Visible': false},
-   {'Type':"measgroupcfg", 'Class' : 'success', 'Visible': false},
-   {'Type':"varcatalogcfg", 'Class' : 'default', 'Visible': false}
    ]
 
    //Reset Vars on Init
@@ -403,7 +396,7 @@ export class ExportFileModal {
     this.listFilterProp = [];
     if (this.mySubscriber) this.mySubscriber.unsubscribe();
     switch (type) {
-      case 'hmccservercfg':
+      case 'hmcservercfg':
        this.mySubscriber = this.hmcServerService.getHMCServerItem(filter)
        .subscribe(
        data => {
