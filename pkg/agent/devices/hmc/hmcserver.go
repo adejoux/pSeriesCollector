@@ -1,11 +1,9 @@
 package hmc
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
-	//"strconv"
-
-	"encoding/json"
 	"strings"
 	"sync"
 	"time"
@@ -67,15 +65,20 @@ type HMCServer struct {
 }
 
 // Ping get data from hmc
-func Ping(c *config.HMCCfg, log *logrus.Logger) (*hmcpcm.Session, time.Duration, string, error) {
+func Ping(c *config.HMCCfg, log *logrus.Logger, apidbg bool, filename string) (*hmcpcm.Session, time.Duration, string, error) {
 	HMCURL := fmt.Sprintf("https://"+"%s"+":12443", c.Host)
 	start := time.Now()
+
 	Session, err := hmcpcm.NewSession(HMCURL, c.User, c.Password)
 	if err != nil {
 		return nil, 0, "error", err
 	}
 	if log != nil {
 		Session.SetLog(log)
+	}
+	if apidbg == true {
+		Session.Debug = true
+		Session.SetDebugLog(filename)
 	}
 
 	err = Session.DoLogon()
@@ -190,6 +193,7 @@ func (d *HMCServer) invalidateMetrics() {
 	}*/
 }
 
+// GetHMCData get data from HMC
 func (d *HMCServer) GetHMCData() {
 
 	bpts, _ := d.Influx.BP()
@@ -267,6 +271,8 @@ func (d *HMCServer) Init(c *config.HMCCfg) error {
 	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
 	d.log.Formatter = customFormatter
 	customFormatter.FullTimestamp = true
+
+	d.ManagedSystemOnly = d.cfg.ManagedSystemsOnly
 
 	d.DeviceActive = d.cfg.Active
 
@@ -346,13 +352,14 @@ func (d *HMCServer) Reconnect() error {
 	var id string
 	var err error
 	d.Debugf("Trying Reconnect again....")
-	d.Session, t, id, err = Ping(d.cfg, d.log)
+	d.Session, t, id, err = Ping(d.cfg, d.log, d.cfg.HMCAPIDebug, d.cfg.ID)
 	if err != nil {
 		d.Errorf("Error on HMC connection %s", err)
 		return err
 	}
 	//We should set samples to get only for the latest period
 	d.Session.SetSamples((d.Freq / 30) + 1)
+
 	d.Infof("Connected to HMC  OK : ID: %s : Duration %s ", id, t.String())
 	return nil
 }

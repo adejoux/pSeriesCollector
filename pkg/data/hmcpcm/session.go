@@ -93,6 +93,10 @@ func (s *Session) SetLog(l *logrus.Logger) {
 // SetDebugLog set filename for log
 func (s *Session) SetDebugLog(filename string) {
 
+	if s.dlog != nil {
+		return
+	}
+
 	l, err := GetDebugLogger(filename)
 	if err != nil {
 		s.Errorf("ERROR on create HMC API debug file %s ", err)
@@ -145,14 +149,16 @@ func (s *Session) DoLogon() error {
 	request.Header.Set("Accept", "application/vnd.ibm.powervm.web+xml; type=LogonResponse")
 	request.Header.Set("X-Audit-Memento", "hmctest")
 
-	s.Infof("HTTPREQ PUT: %s", authurl)
 	s.PrintHTTPRequest(request)
+	now := time.Now()
 	response, err := s.client.Do(request)
+	duration := time.Since(now)
 	if err != nil {
 		return fmt.Errorf("HMC error sending auth request: %v", err)
 	}
 	defer response.Body.Close()
-	s.PrintHTTPResponse(response)
+	s.PrintHTTPResponse(response, duration)
+	s.Infof("HTTPREQ PUT: %s [%s]", authurl, duration.String())
 	contents, _ := ioutil.ReadAll(response.Body)
 	s.PrintHTTPContent(contents)
 	if response.StatusCode != 200 {
@@ -197,9 +203,10 @@ func (s *Session) getPCMLinks(link string) (PCMLinks, error) {
 
 	request.Header.Set("Accept", "*/*;q=0.8")
 
-	s.Infof("HTTPREQ GET %s", link)
 	s.PrintHTTPRequest(request)
+	now := time.Now()
 	response, requestErr := s.client.Do(request)
+	duration := time.Since(now)
 	if requestErr != nil {
 		return pcmlinks, requestErr
 	}
@@ -210,7 +217,8 @@ func (s *Session) getPCMLinks(link string) (PCMLinks, error) {
 		statusErr := errors.New(errorMessage)
 		return pcmlinks, statusErr
 	}
-	s.PrintHTTPResponse(response)
+	s.PrintHTTPResponse(response, duration)
+	s.Infof("HTTPREQ GET %s [%s]", link, duration.String())
 
 	var feed Feed
 	contents, readErr := ioutil.ReadAll(response.Body)
@@ -254,17 +262,19 @@ func (s *Session) getPCMData(rawurl string) (PCMData, error) {
 	pcmurl := s.url + u.Path
 
 	request, _ := http.NewRequest("GET", pcmurl, nil)
-	s.Infof("HTTPREQ GET %s", pcmurl)
+
 	s.PrintHTTPRequest(request)
+	now := time.Now()
 	response, err := s.client.Do(request)
+	duration := time.Since(now)
 	if err != nil {
 		return data, err
 	}
 	defer response.Body.Close()
-
+	s.PrintHTTPResponse(response, duration)
+	s.Infof("HTTPREQ GET %s [%s]", pcmurl, duration.String())
 	contents, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		s.PrintHTTPResponse(response)
 		return data, err
 	}
 
@@ -294,13 +304,16 @@ func (s *Session) getManagedSystems() (systems []System, err error) {
 	request, _ := http.NewRequest("GET", mgdurl, nil)
 
 	request.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-	s.Infof("HTTPREQ GET %s", mgdurl)
+
 	s.PrintHTTPRequest(request)
+	now := time.Now()
 	response, err := s.client.Do(request)
+	duration := time.Since(now)
 	if err != nil {
 		return nil, err
 	}
-
+	s.PrintHTTPResponse(response, duration)
+	s.Infof("HTTPREQ GET %s [%s]", mgdurl, duration.String())
 	defer response.Body.Close()
 	contents, readErr := ioutil.ReadAll(response.Body)
 	if readErr != nil {
@@ -311,7 +324,7 @@ func (s *Session) getManagedSystems() (systems []System, err error) {
 		s.Errorf("Error getting LPAR informations. status code: %d", response.StatusCode)
 	}
 
-	s.PrintHTTPContent(contents)
+	s.PrintHTTPContentXML(contents)
 
 	var feed Feed
 	newErr := xml.Unmarshal(contents, &feed)

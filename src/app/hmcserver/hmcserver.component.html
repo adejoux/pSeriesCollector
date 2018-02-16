@@ -96,6 +96,17 @@
             </div>
           </div>
           <div class="form-group">
+              <label class="control-label col-sm-2" for="ManagedSystemsOnly">ManagedSystemsOnly</label>
+              <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Active on Collector reboot"></i>
+              <div class="col-sm-9">
+                <select formControlName="ManagedSystemsOnly" id="ManagedSystemsOnly" [ngModel]="sampleComponentForm.value.ManagedSystemsOnly">
+                  <option value="true">True</option>
+                  <option value="false">False</option>
+                </select>
+                <control-messages [control]="sampleComponentForm.controls.ManagedSystemsOnly"></control-messages>
+              </div>
+            </div>
+          <div class="form-group">
             <label class="control-label col-sm-2" for="Freq">Freq</label>
             <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Frequency of hmc data polling (in seconds)"></i>
             <div class="col-sm-9">
@@ -103,14 +114,7 @@
               <control-messages [control]="sampleComponentForm.controls.Freq"></control-messages>
             </div>
           </div>
-          <div class="form-group">
-            <label class="control-label col-sm-2" for="Samples">Samples</label>
-            <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Number of samples to gather"></i>
-            <div class="col-sm-9">
-              <input formControlName="Samples" id="Samples" [ngModel]="sampleComponentForm.value.Samples" />
-              <control-messages [control]="sampleComponentForm.controls.Samples"></control-messages>
-            </div>
-          </div>
+
           <div class="form-group">
             <label class="control-label col-sm-2" for="OutDB">InfluxDB Server</label>
             <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="InfluxDB server"></i>
@@ -137,6 +141,17 @@
              <control-messages [control]="sampleComponentForm.controls.LogLevel"></control-messages>
             </div> <!-- div class="col-sm-9 -->
          </div><!-- class="form-group" style="margin-top: 25px" -->
+         <div class="form-group">
+            <label class="control-label col-sm-2" for="HMCAPIDebug">HMC API Debug</label>
+            <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Set HMC API Debug on collector boot"></i>
+            <div class="col-sm-9">
+              <select formControlName="HMCAPIDebug" id="HMCAPIDebug" [ngModel]="sampleComponentForm.value.HMCAPIDebug">
+                <option value="true">True</option>
+                <option value="false">False</option>
+              </select>
+              <control-messages [control]="sampleComponentForm.controls.HMCAPIDebug"></control-messages>
+            </div>
+          </div>
          <div class="form-group">
           <label class="control-label col-sm-2" for="DeviceTagName">DeviceTagName</label>
           <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Device Tag used to identify this hmc as default 'hmc' will be used"></i>

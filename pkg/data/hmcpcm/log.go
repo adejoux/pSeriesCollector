@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httputil"
+	"time"
 )
 
 // Debugf info
@@ -69,13 +70,13 @@ func (s *Session) PrintHTTPRequest(request *http.Request) {
 }
 
 // PrintHTTPResponse print pretty  HTTP response
-func (s *Session) PrintHTTPResponse(response *http.Response) {
+func (s *Session) PrintHTTPResponse(response *http.Response, d time.Duration) {
 	if s.Debug {
-		responseDump, err := httputil.DumpResponse(response, true)
+		responseDump, err := httputil.DumpResponse(response, false)
 		if err != nil {
 			s.dlog.Printf("Error on dump response %s", err)
 		}
-		s.dlog.Print("= HTTPRESP ============================================================")
+		s.dlog.Printf("= HTTPRESP [%s] ============================================================", d.String())
 		s.dlog.Print(string(responseDump))
 	}
 }

@@ -3,7 +3,6 @@ package hmc
 import (
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/adejoux/pSeriesCollector/pkg/data/hmcpcm"
@@ -288,22 +287,24 @@ func (d *HMCServer) GenerateLparMeasurements(pa *PointArray, sysname string, t t
 //ImportData is the entry point for subcommand hmc
 func (d *HMCServer) ImportData(points *PointArray) error {
 
-	d.Infof("Getting list of managed systems\n")
+	d.Infof("Getting list of managed systems")
 	systems, err := d.Session.GetManagedSystems()
 	if err != nil {
 		d.Infof("ERROR on get Managed Systems: %s", err)
 		return err
 	}
+	d.Debugf("ManagedSystems %+v", systems)
 
 	for _, system := range systems {
 		//Pending an  easy and powerfull filtering system
 
-		d.Infof("MANAGED SYSTEM %s", strings.ToUpper(system.Name))
+		d.Infof("| SYSTEM [%s] | Init processing...", system.Name)
 		pcmlinks, syserr := d.Session.GetSystemPCMLinks(system.UUID)
 		if syserr != nil {
 			d.Infof("Error getting System PCM links: %s", syserr)
 			continue
 		}
+		d.Debugf("| SYSTEM [%s] | Got PCMLinks", system.Name, pcmlinks)
 
 		// Get Managed System PCM metrics
 		data, dataerr := d.Session.GetPCMData(pcmlinks.System)
@@ -312,19 +313,23 @@ func (d *HMCServer) ImportData(points *PointArray) error {
 			continue
 		}
 
-		d.Infof("Processing %d samples ", len(data.SystemUtil.UtilSamples))
+		d.Infof("| SYSTEM [%s]  | Processing %d samples ", system.Name, len(data.SystemUtil.UtilSamples))
 
 		for _, sample := range data.SystemUtil.UtilSamples {
 			timestamp, timeerr := time.Parse(timeFormat, sample.SampleInfo.TimeStamp)
 			if timeerr != nil {
-				d.Errorf("Error on sample timestamp formating ERROR:%s", timeerr)
+				d.Errorf("| SYSTEM [%s] | Error on sample timestamp formating ERROR:%s", system.Name, timeerr)
 				continue
 			}
 
-			// if sample status equal 1 we have no data in this sample
-			if sample.SampleInfo.Status == 1 {
-				d.Warnf("Skipping sample. Error in sample collection: %s\n", sample.SampleInfo.ErrorInfo[0].ErrMsg)
+			switch sample.SampleInfo.Status {
+			case 1:
+				// if sample sample.SampleInfo.Statusstatus equal 1 we have no data in this sample
+				d.Infof(" | SYSTEM [%s] | Skipping sample. Error in sample collection: %s", system.Name, sample.SampleInfo.ErrorInfo[0].ErrMsg)
 				continue
+			case 2:
+				// if sample sample.SampleInfo.Statusstatus equal 2 there is some error message but could continue
+				d.Warnf(" | SYSTEM [%s] | SAMPLE Status 2: %s", system.Name, sample.SampleInfo.ErrorInfo[0].ErrMsg)
 			}
 
 			//ServerUtil
@@ -338,38 +343,46 @@ func (d *HMCServer) ImportData(points *PointArray) error {
 		if d.ManagedSystemOnly {
 			continue
 		}
+
 		var lparLinks hmcpcm.PCMLinks
 		for _, link := range pcmlinks.Partitions {
+			d.Infof("| SYSTEM [%s] | LPAR [%s] | Init LPAR gathering", system.Name, link)
 			//need to parse the link because the specified hostname can be different
 			//of the one specified by the user and the auth cookie will not match
 			rawurl, _ := url.Parse(link)
 			var lparGetPCMErr error
 			lparLinks, lparGetPCMErr = d.Session.GetPartitionPCMLinks(rawurl.Path)
 			if lparGetPCMErr != nil {
-				d.Errorf("Error getting PCM data: %s", lparGetPCMErr)
+				d.Errorf(" | SYSTEM [%s] |LPAR [%s] | Error getting PCM data: %s", system.Name, link, lparGetPCMErr)
 				continue
 			}
+			d.Debugf("| SYSTEM [%s] | LPAR [%s] | Got LPARLinks %+v", system.Name, link, lparLinks)
 
 			for _, lparLink := range lparLinks.Partitions {
 
 				lparData, lparErr := d.Session.GetPCMData(lparLink)
 
 				if lparErr != nil {
-					d.Errorf("Error geting PCM data: %s", lparErr)
+					d.Errorf(" | SYSTEM [%s] | LPAR [%s] | Error geting PCM data: %s", system.Name, link, lparErr)
 					continue
 				}
+				d.Infof("")
 
 				for _, sample := range lparData.SystemUtil.UtilSamples {
 
-					// if sample status equal 1 we have no data in this sample
-					if sample.SampleInfo.Status == 1 {
-						d.Infof("Skipping sample. Error in sample collection: %s\n", sample.SampleInfo.ErrorInfo[0].ErrMsg)
+					switch sample.SampleInfo.Status {
+					case 1:
+						// if sample sample.SampleInfo.Statusstatus equal 1 we have no data in this sample
+						d.Infof("| SYSTEM [%s] | LPAR [%s] | Skipping sample. Error in sample collection: %s\n", system.Name, link, sample.SampleInfo.ErrorInfo[0].ErrMsg)
 						continue
+					case 2:
+						// if sample sample.SampleInfo.Statusstatus equal 2 there is some error message but could continue
+						d.Warnf("| SYSTEM [%s] | LPAR [%s] | SAMPLE Status 2: %s", system.Name, link, sample.SampleInfo.ErrorInfo[0].ErrMsg)
 					}
 
 					timestamp, timeerr := time.Parse(timeFormat, sample.SampleInfo.TimeStamp)
 					if timeerr != nil {
-						d.Errorf("Error on sample timestamp formating ERROR:%s", timeerr)
+						d.Errorf("| SYSTEM [%s] | LPAR [%s] | Error on sample timestamp formating ERROR:%s", system.Name, link, timeerr)
 						continue
 					}
 

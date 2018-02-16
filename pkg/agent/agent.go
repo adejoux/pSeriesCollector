@@ -232,7 +232,7 @@ func initSelfMonitoring(idb map[string]*output.InfluxDB) {
 			log.Errorf("SELFMON disabled becaouse of no default db found !!! SELFMON[ %+v ]  INFLUXLIST[ %+v]\n", MainConfig.Selfmon, idb)
 		}
 	} else {
-		log.Printf("SELFMON disabled %+v\n", MainConfig.Selfmon)
+		log.Printf("SELFMON disabled %+v", MainConfig.Selfmon)
 	}
 }
 

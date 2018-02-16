@@ -32,15 +32,16 @@ type HMCCfg struct {
 	Port     int    `xorm:"port" binding:"Required"`
 	User     string `xorm:"user" binding:"Required"`
 	Password string `xorm:"password" binding:"Required"`
-	Samples  int    `xorm:"samples" binding:"Required"`
 
-	Active bool `xorm:"'active' default 1"`
+	Active             bool `xorm:"'active' default 1"`
+	ManagedSystemsOnly bool `xorm:"'managed_systems_only' default 0"`
 
 	Freq int `xorm:"'freq' default 60" binding:"Default(60);IntegerNotZero"`
 
-	OutDB    string `xorm:"outdb"`
-	LogLevel string `xorm:"loglevel" binding:"Default(info)"`
-	LogFile  string `xorm:"logfile"`
+	OutDB       string `xorm:"outdb"`
+	LogLevel    string `xorm:"loglevel" binding:"Default(info)"`
+	HMCAPIDebug bool   `xorm:"hmc_api_debug"`
+	LogFile     string `xorm:"logfile"`
 
 	//influx tags
 	DeviceTagName  string   `xorm:"devicetagname" binding:"Default(hostname)"`

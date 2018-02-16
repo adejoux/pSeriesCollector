@@ -6,10 +6,10 @@ export const HMCServerComponentConfig: any =
       { 'title': 'Host', 'name': 'Host' },
       { 'title': 'Port', 'name': 'Port' },
       { 'title': 'Active', 'name': 'Active' },
+      { 'title': 'Systems Only', 'name': 'ManagedSystemsOnly' },
       { 'title': 'User', 'name': 'User' },
       { 'title': 'Freq', 'name': 'Freq' },
       { 'title': 'OutDB', 'name': 'OutDB' },
-      { 'title': 'Samples', 'name': 'Samples' },
       { 'title': 'Extra Tags', 'name': 'ExtraTags' }
     ],
     'slug' : 'hmcservercfg'

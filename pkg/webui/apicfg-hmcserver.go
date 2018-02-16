@@ -106,7 +106,7 @@ func GetHMCServerAffectOnDel(ctx *Context) {
 //PingHMCServer Return ping result
 func PingHMCServer(ctx *Context, cfg config.HMCCfg) {
 	log.Infof("trying to ping influx server %s : %+v", cfg.ID, cfg)
-	_, elapsed, message, err := hmc.Ping(&cfg, log)
+	_, elapsed, message, err := hmc.Ping(&cfg, log, false, "")
 	type result struct {
 		Result  string
 		Elapsed time.Duration

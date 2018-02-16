@@ -13,11 +13,12 @@ export class HMCServerService {
     jsonParser(key,value) {
         console.log("KEY: "+key+" Value: "+value);
         if ( key == 'Port' ||
-             key == 'Freq' ||
-             key == 'Samples') {
+             key == 'Freq' ) {
             return parseInt(value);
         }
-        if ( key == 'Active') {
+        if ( key == 'Active'||
+             key == 'ManagedSystemsOnly'||
+             key == 'HMCAPIDebug') {
             return ( value === "true" || value === true);
         }
         if ( key == 'ExtraTags' ) {
