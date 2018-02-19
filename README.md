@@ -45,7 +45,7 @@ npm run postbuild #will build fronted and backend
 To execute without any configuration you need a minimal config.toml file on the conf directory.
 
 ```bash
-cp conf/sample.pseriescollector.toml conf/config.toml
+cp conf/sample.pseriescollector.toml conf/pseriescollector.toml
 ./bin/pseriescollector
 ```
 
@@ -62,11 +62,3 @@ will init a change autodetect webserver with angular-cli (ng serve) and also a a
 #### Online config
 
 Now you wil be able to configure metrics/measuremnets and devices from the builting web server at  http://localhost:8090 or http://localhost:4200 if working in development mode (npm start)
-
-### Offline configuration.
-
-You will be able also insert data directly on the sqlite db that pseriescollector has been created at first execution on config/pseriescollector.db examples on example_config.sql
-
-```
-cat conf/example_config.sql |sqlite3 conf/pseriescollector.db
-```
