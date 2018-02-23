@@ -432,7 +432,6 @@ func (d *HMCServer) gatherAndProcessData(t *time.Ticker, force bool) *time.Ticke
 					utils.WaitAlignForNextCycle(d.Freq, d.log)
 					t.Stop()
 					t = time.NewTicker(time.Duration(d.Freq) * time.Second)
-					d.Info("")
 					//force one iteration now..after device has been connected  dont wait for next
 					//ticker (1 complete cycle)
 				}
