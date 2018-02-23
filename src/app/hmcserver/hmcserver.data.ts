@@ -9,6 +9,7 @@ export const HMCServerComponentConfig: any =
       { 'title': 'Systems Only', 'name': 'ManagedSystemsOnly' },
       { 'title': 'User', 'name': 'User' },
       { 'title': 'Freq', 'name': 'Freq' },
+      { 'title': 'Update Scan', 'name': 'UpdateScanFreq' },
       { 'title': 'OutDB', 'name': 'OutDB' },
       { 'title': 'Extra Tags', 'name': 'ExtraTags' }
     ],

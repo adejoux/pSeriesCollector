@@ -28,8 +28,12 @@ const (
 	BackEndSentStartTime = 6
 	// BackEndSentDuration Time taken in complete the data sent process
 	BackEndSentDuration = 7
+	// ScanStartTime Time which begins the last HMC scan update
+	ScanStartTime = 8
+	// ScanDuration Time taken in complete the filtering process
+	ScanDuration = 9
 	// DevStatTypeSize special value to set the last stat position
-	DevStatTypeSize = 8
+	DevStatTypeSize = 10
 )
 
 // DevStat minimal info to show users
@@ -46,8 +50,9 @@ type DevStat struct {
 	Counters []interface{}
 
 	//device state
-	DeviceActive    bool
-	DeviceConnected bool
+	DeviceActive       bool
+	DeviceConnected    bool
+	ReloadLoopsPending int
 	//extra measurement statistics
 	NumMetrics int
 }
@@ -68,10 +73,16 @@ func (s *DevStat) Init(id string, tm map[string]string, l *logrus.Logger) {
 	s.Counters[CycleGatherDuration] = 0.0
 	s.Counters[BackEndSentStartTime] = 0
 	s.Counters[BackEndSentDuration] = 0.0
+	s.Counters[ScanStartTime] = 0
+	s.Counters[ScanDuration] = 0.0
 }
 
 func (s *DevStat) reset() {
 	for k, val := range s.Counters {
+		//Scan stats should not be reseted
+		if k == 8 || k == 9 {
+			continue
+		}
 		switch v := val.(type) {
 		case string:
 			s.Counters[k] = ""
@@ -94,14 +105,16 @@ func (s *DevStat) GetCounter(stat DevStatType) interface{} {
 
 func (s *DevStat) getMetricFields() map[string]interface{} {
 	fields := map[string]interface{}{
-		/*1*/ "metric_sent": s.Counters[MetricSent],
-		/*2*/ "metric_sent_errors": s.Counters[MetricSentErrors],
-		/*3*/ "measurement_sent": s.Counters[MeasurementSent],
-		/*4*/ "measurement_sent_errors": s.Counters[MeasurementSentErrors],
-		/*5*/ "cycle_gather_start_time": s.Counters[CycleGatherStartTime],
-		/*6*/ "cycle_gather_duration": s.Counters[CycleGatherDuration],
-		/*7*/ "backend_sent_start_time": s.Counters[BackEndSentStartTime],
-		/*8*/ "backend_sent_duration": s.Counters[BackEndSentDuration],
+		/*0*/ "metric_sent": s.Counters[MetricSent],
+		/*1*/ "metric_sent_errors": s.Counters[MetricSentErrors],
+		/*2*/ "measurement_sent": s.Counters[MeasurementSent],
+		/*3*/ "measurement_sent_errors": s.Counters[MeasurementSentErrors],
+		/*4*/ "cycle_gather_start_time": s.Counters[CycleGatherStartTime],
+		/*5*/ "cycle_gather_duration": s.Counters[CycleGatherDuration],
+		/*6*/ "backend_sent_start_time": s.Counters[BackEndSentStartTime],
+		/*7*/ "backend_sent_duration": s.Counters[BackEndSentDuration],
+		/*8*/ "scan_sent_start_time": s.Counters[ScanStartTime],
+		/*9*/ "scan_sent_duration": s.Counters[ScanDuration],
 	}
 	return fields
 }
@@ -130,7 +143,9 @@ func (s *DevStat) Send() {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.log.Infof("STATS HMC :  polling took [%f seconds] ", s.Counters[CycleGatherDuration])
+	s.log.Infof("STATS HMC: last scan send took [%f seconds]", s.Counters[ScanDuration])
 	s.log.Infof("STATS INFLUX: influx send took [%f seconds]", s.Counters[BackEndSentDuration])
+
 	if s.selfmon != nil {
 		s.selfmon.AddDeviceMetrics(s.id, s.getMetricFields(), s.TagMap)
 	}
@@ -177,4 +192,12 @@ func (s *DevStat) AddSentDuration(start time.Time, duration time.Duration) {
 		s.Counters[BackEndSentStartTime] = start.Unix()
 	}
 	s.Counters[BackEndSentDuration] = s.Counters[BackEndSentDuration].(float64) + duration.Seconds()
+}
+
+// SetScanStats Set Filter Stats
+func (s *DevStat) SetScanStats(start time.Time, duration time.Duration) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.Counters[ScanStartTime] = start.Unix()
+	s.Counters[ScanDuration] = duration.Seconds()
 }

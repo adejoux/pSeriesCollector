@@ -52,6 +52,8 @@ type HMCServer struct {
 	rtData    sync.RWMutex
 	statsData sync.RWMutex
 
+	ReloadLoopsPending int
+
 	DeviceActive    bool
 	DeviceConnected bool
 	StateDebug      bool
@@ -62,6 +64,8 @@ type HMCServer struct {
 	Gather      func() `json:"-"`
 
 	ManagedSystemOnly bool
+	//MData             *hmcpcm.Feed
+	System map[string]*hmcpcm.ManagedSystem
 }
 
 // Ping get data from hmc
@@ -131,10 +135,25 @@ func (d *HMCServer) getBasicStats() *DevStat {
 	stat.TagMap = d.TagMap
 	stat.DeviceActive = d.DeviceActive
 	stat.DeviceConnected = d.DeviceConnected
+	stat.ReloadLoopsPending = d.ReloadLoopsPending
 
 	stat.NumMetrics = sum
 
 	return stat
+}
+
+func (d *HMCServer) setReloadLoopsPending(val int) {
+	d.ReloadLoopsPending = val
+}
+
+func (d *HMCServer) getReloadLoopsPending() int {
+	return d.ReloadLoopsPending
+}
+
+func (d *HMCServer) decReloadLoopsPending() {
+	if d.ReloadLoopsPending > 0 {
+		d.ReloadLoopsPending--
+	}
 }
 
 // GetOutSenderFromMap to get info about the sender will use
@@ -160,6 +179,11 @@ func (d *HMCServer) ForceGather() {
 	d.Node.SendMsg(&bus.Message{Type: "forcegather"})
 }
 
+// ForceFltUpdate send info to update the filter counter to the next execution
+func (d *HMCServer) ForceHMCScan() {
+	d.Node.SendMsg(&bus.Message{Type: "hmcscan"})
+}
+
 // StopGather send signal to stop the Gathering process
 func (d *HMCServer) StopGather() {
 	d.Node.SendMsg(&bus.Message{Type: "exit"})
@@ -178,11 +202,6 @@ func (d *HMCServer) RTActHMCAPIDebug(activate bool) {
 // RTSetLogLevel set the log level for this device
 func (d *HMCServer) RTSetLogLevel(level string) {
 	d.Node.SendMsg(&bus.Message{Type: "loglevel", Data: level})
-}
-
-//InitDevMeasurements generte all meeded internal structs
-func (d *HMCServer) InitDevMeasurements() {
-
 }
 
 // this method puts all metrics as invalid once sent to the backend
@@ -323,6 +342,8 @@ func (d *HMCServer) Init(c *config.HMCCfg) error {
 
 	d.Gather = d.GetHMCData
 
+	d.setReloadLoopsPending(d.cfg.UpdateScanFreq)
+
 	d.statsData.Lock()
 	d.Stats = d.getBasicStats()
 	d.statsData.Unlock()
@@ -358,6 +379,7 @@ func (d *HMCServer) Reconnect() error {
 		return err
 	}
 	//We should set samples to get only for the latest period
+	//(+1 set as a workarround for some holes sometimes when gathering time + scan time > freq) REVIEW!!
 	d.Session.SetSamples((d.Freq / 30) + 1)
 
 	d.Infof("Connected to HMC  OK : ID: %s : Duration %s ", id, t.String())
@@ -397,8 +419,11 @@ func (d *HMCServer) gatherAndProcessData(t *time.Ticker, force bool) *time.Ticke
 			err := d.Reconnect()
 			if err == nil {
 				d.DeviceConnected = true
-				//REVIEW perhaps not needed here
-				d.InitDevMeasurements()
+				start := time.Now()
+				d.ScanHMCDevices()
+				elapsed := time.Since(start)
+				d.stats.SetScanStats(start, elapsed)
+				d.Infof("SCAN finished in: %s", elapsed.String())
 
 				if force == false {
 					// Round collection to nearest interval by sleeping
@@ -407,6 +432,7 @@ func (d *HMCServer) gatherAndProcessData(t *time.Ticker, force bool) *time.Ticke
 					utils.WaitAlignForNextCycle(d.Freq, d.log)
 					t.Stop()
 					t = time.NewTicker(time.Duration(d.Freq) * time.Second)
+					d.Info("")
 					//force one iteration now..after device has been connected  dont wait for next
 					//ticker (1 complete cycle)
 				}
@@ -423,6 +449,24 @@ func (d *HMCServer) gatherAndProcessData(t *time.Ticker, force bool) *time.Ticke
 			d.invalidateMetrics()
 			d.stats.ResetCounters()
 			d.Gather()
+
+			/*******************************************
+			 *
+			 * ReScan HMC Devices (if needed)
+			 *
+			 *******************************************/
+			//Check if reload needed with d.ReloadLoopsPending if a posivive value on negative this will disabled
+
+			d.decReloadLoopsPending()
+
+			if d.getReloadLoopsPending() == 0 {
+				start := time.Now()
+				d.ScanHMCDevices()
+				elapsed := time.Since(start)
+				d.stats.SetScanStats(start, elapsed)
+				d.Infof("SCAN finished in: %s", elapsed.String())
+				d.setReloadLoopsPending(d.cfg.UpdateScanFreq)
+			}
 
 			d.CheckDeviceConnectivity()
 
@@ -455,7 +499,11 @@ func (d *HMCServer) startGatherGo(wg *sync.WaitGroup) {
 		d.Infof("Begin first InidevInfo")
 		// REVIEW perhaps not needed here
 		d.rtData.Lock()
-		d.InitDevMeasurements()
+		start := time.Now()
+		d.ScanHMCDevices()
+		elapsed := time.Since(start)
+		d.stats.SetScanStats(start, elapsed)
+		d.Infof("SCAN finished in: %s", elapsed.String())
 		d.rtData.Unlock()
 	} else {
 		d.Infof("Can not initialize this device: Is Active: %t  |  Connection Active: %t ", d.DeviceActive, d.DeviceConnected)
@@ -476,12 +524,17 @@ func (d *HMCServer) startGatherGo(wg *sync.WaitGroup) {
 			case val := <-d.Node.Read:
 				d.Infof("Received Message...%s: %+v", val.Type, val.Data)
 				switch val.Type {
+
 				case "forcegather":
 					d.Infof("invoked Force Data Gather And Process")
 					d.gatherAndProcessData(t, true)
 				case "exit":
 					d.Infof("invoked EXIT from HMC Gather process ")
 					return
+				case "hmcscan":
+					d.rtData.Lock()
+					d.setReloadLoopsPending(1)
+					d.rtData.Unlock()
 				case "hmcapidebug":
 					debug := val.Data.(bool)
 					if d.DeviceConnected == true {

@@ -222,11 +222,12 @@ func createMinTar() {
 	runPrint("mkdir", "-p", filepath.Join(packageRoot, "/opt/pseriescollector/bin"))
 	runPrint("mkdir", "-p", filepath.Join(packageRoot, "/opt/pseriescollector/log"))
 	runPrint("mkdir", "-p", filepath.Join(packageRoot, "/opt/pseriescollector/public"))
-	runPrint("cp", "conf/sample.config.toml", filepath.Join(packageRoot, "/opt/pseriescollector/conf"))
+	runPrint("cp", "conf/sample.pseriescollector.toml", filepath.Join(packageRoot, "/opt/pseriescollector/conf"))
 	runPrint("cp", "bin/pseriescollector", filepath.Join(packageRoot, "/opt/pseriescollector/bin"))
 	runPrint("cp", "bin/pseriescollector.md5", filepath.Join(packageRoot, "/opt/pseriescollector/bin"))
 	runPrint("cp", "-a", filepath.Join(workingDir, "public")+"/.", filepath.Join(packageRoot, "/opt/pseriescollector/public"))
-	runPrint("tar", "zcvf", "dist/pseriescollector-"+version+"-"+getGitSha()+".tar.gz", "-C", packageRoot, ".")
+	tarname := fmt.Sprintf("dist/pseriescollector-%s-%s_%s_%s.tar.gz", version, getGitSha(), runtime.GOOS, runtime.GOARCH)
+	runPrint("tar", "zcvf", tarname, "-C", packageRoot, ".")
 	runPrint("rm", "-rf", packageRoot)
 }
 

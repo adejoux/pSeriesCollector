@@ -1,12 +1,11 @@
 package hmc
 
 import (
-	"net/url"
-	"strconv"
-	"time"
-
+	"fmt"
 	"github.com/adejoux/pSeriesCollector/pkg/data/hmcpcm"
 	"github.com/adejoux/pSeriesCollector/pkg/data/utils"
+	"strconv"
+	"time"
 )
 
 const timeFormat = "2006-01-02T15:04:05-0700"
@@ -104,7 +103,7 @@ func (d *HMCServer) GenerateViosMeasurements(pa *PointArray, sysname string, t t
 			if len(vscsi.TransmittedBytes) > 0 {
 				fields["transmittedBytes"] = vscsi.TransmittedBytes[0]
 			}
-			pa.Append("SystemFiberChannelAdapters", VscsiTags, fields, t)
+			pa.Append("SystemGenericVirtualAdapters", VscsiTags, fields, t)
 
 		}
 		for _, ssp := range vios.Storage.SharedStoragePools {
@@ -284,59 +283,68 @@ func (d *HMCServer) GenerateLparMeasurements(pa *PointArray, sysname string, t t
 	}
 }
 
-//ImportData is the entry point for subcommand hmc
-func (d *HMCServer) ImportData(points *PointArray) error {
+// ScanHMCDevices scan HMC
+func (d *HMCServer) ScanHMCDevices() error {
+	d.Infof("Scanning  managed systems")
 
-	d.Infof("Getting list of managed systems")
-	systems, err := d.Session.GetManagedSystems()
+	mdata, err := d.Session.GetManagedSystems()
 	if err != nil {
 		d.Infof("ERROR on get Managed Systems: %s", err)
 		return err
 	}
-	d.Debugf("ManagedSystems %+v", systems)
 
-	for _, system := range systems {
+	//d.MData = mdata
+	d.System = make(map[string]*hmcpcm.ManagedSystem)
+
+	for _, entry := range mdata.Entries {
+		d.System[entry.ID] = &entry.Contents[0].System[0]
+	}
+	return nil
+}
+
+//ImportData is the entry point for subcommand hmc
+func (d *HMCServer) ImportData(points *PointArray) error {
+
+	if d.System == nil {
+		return fmt.Errorf("Any Scanned SM/LPAR devices detected")
+	}
+
+	for _, system := range d.System {
 		//Pending an  easy and powerfull filtering system
 
-		d.Infof("| SYSTEM [%s] | Init processing...", system.Name)
-		pcmlinks, syserr := d.Session.GetSystemPCMLinks(system.UUID)
-		if syserr != nil {
-			d.Infof("Error getting System PCM links: %s", syserr)
-			continue
-		}
-		d.Debugf("| SYSTEM [%s] | Got PCMLinks", system.Name, pcmlinks)
+		d.Infof("| SYSTEM [%s] | Init processing...", system.SystemName)
 
 		// Get Managed System PCM metrics
-		data, dataerr := d.Session.GetPCMData(pcmlinks.System)
+		data, dataerr := d.Session.GetSysPCMData(system)
 		if dataerr != nil {
 			d.Errorf("Error geting PCM data: %s", dataerr)
 			continue
 		}
 
-		d.Infof("| SYSTEM [%s]  | Processing %d samples ", system.Name, len(data.SystemUtil.UtilSamples))
+		d.Infof("| SYSTEM [%s]  | Processing %d samples ", system.SystemName, len(data.SystemUtil.UtilSamples))
 
 		for _, sample := range data.SystemUtil.UtilSamples {
 			timestamp, timeerr := time.Parse(timeFormat, sample.SampleInfo.TimeStamp)
 			if timeerr != nil {
-				d.Errorf("| SYSTEM [%s] | Error on sample timestamp formating ERROR:%s", system.Name, timeerr)
+				d.Errorf("| SYSTEM [%s] | Error on sample timestamp formating ERROR:%s", system.SystemName, timeerr)
 				continue
 			}
 
 			switch sample.SampleInfo.Status {
 			case 1:
 				// if sample sample.SampleInfo.Statusstatus equal 1 we have no data in this sample
-				d.Infof(" | SYSTEM [%s] | Skipping sample. Error in sample collection: %s", system.Name, sample.SampleInfo.ErrorInfo[0].ErrMsg)
+				d.Infof(" | SYSTEM [%s] | Skipping sample. Error in sample collection: %s", system.SystemName, sample.SampleInfo.ErrorInfo[0].ErrMsg)
 				continue
 			case 2:
 				// if sample sample.SampleInfo.Statusstatus equal 2 there is some error message but could continue
-				d.Warnf(" | SYSTEM [%s] | SAMPLE Status 2: %s", system.Name, sample.SampleInfo.ErrorInfo[0].ErrMsg)
+				d.Warnf(" | SYSTEM [%s] | SAMPLE Status 2: %s", system.SystemName, sample.SampleInfo.ErrorInfo[0].ErrMsg)
 			}
 
 			//ServerUtil
-			d.GenerateServerMeasurements(points, system.Name, timestamp, sample.ServerUtil)
+			d.GenerateServerMeasurements(points, system.SystemName, timestamp, sample.ServerUtil)
 
 			//ViosUtil
-			d.GenerateViosMeasurements(points, system.Name, timestamp, sample.ViosUtil)
+			d.GenerateViosMeasurements(points, system.SystemName, timestamp, sample.ViosUtil)
 
 		}
 
@@ -344,52 +352,40 @@ func (d *HMCServer) ImportData(points *PointArray) error {
 			continue
 		}
 
-		var lparLinks hmcpcm.PCMLinks
-		for _, link := range pcmlinks.Partitions {
-			d.Infof("| SYSTEM [%s] | LPAR [%s] | Init LPAR gathering", system.Name, link)
+		for _, lpar := range system.Lpars {
+			d.Infof("| SYSTEM [%s] | LPAR [%s] | Init LPAR gathering", system.SystemName, lpar.PartitionName)
 			//need to parse the link because the specified hostname can be different
 			//of the one specified by the user and the auth cookie will not match
-			rawurl, _ := url.Parse(link)
-			var lparGetPCMErr error
-			lparLinks, lparGetPCMErr = d.Session.GetPartitionPCMLinks(rawurl.Path)
-			if lparGetPCMErr != nil {
-				d.Errorf(" | SYSTEM [%s] |LPAR [%s] | Error getting PCM data: %s", system.Name, link, lparGetPCMErr)
+
+			lparData, lparErr := d.Session.GetLparPCMData(system, lpar)
+
+			if lparErr != nil {
+				d.Errorf(" | SYSTEM [%s] | LPAR [%s] | Error geting PCM data: %s", system.SystemName, lpar.PartitionName, lparErr)
 				continue
 			}
-			d.Debugf("| SYSTEM [%s] | LPAR [%s] | Got LPARLinks %+v", system.Name, link, lparLinks)
 
-			for _, lparLink := range lparLinks.Partitions {
+			for _, sample := range lparData.SystemUtil.UtilSamples {
 
-				lparData, lparErr := d.Session.GetPCMData(lparLink)
+				switch sample.SampleInfo.Status {
+				case 1:
+					// if sample sample.SampleInfo.Statusstatus equal 1 we have no data in this sample
+					d.Infof("| SYSTEM [%s] | LPAR [%s] | Skipping sample. Error in sample collection: %s\n", system.SystemName, lpar.PartitionName, sample.SampleInfo.ErrorInfo[0].ErrMsg)
+					continue
+				case 2:
+					// if sample sample.SampleInfo.Statusstatus equal 2 there is some error message but could continue
+					d.Warnf("| SYSTEM [%s] | LPAR [%s] | SAMPLE Status 2: %s", system.SystemName, lpar.PartitionName, sample.SampleInfo.ErrorInfo[0].ErrMsg)
+				}
 
-				if lparErr != nil {
-					d.Errorf(" | SYSTEM [%s] | LPAR [%s] | Error geting PCM data: %s", system.Name, link, lparErr)
+				timestamp, timeerr := time.Parse(timeFormat, sample.SampleInfo.TimeStamp)
+				if timeerr != nil {
+					d.Errorf("| SYSTEM [%s] | LPAR [%s] | Error on sample timestamp formating ERROR:%s", system.SystemName, lpar.PartitionName, timeerr)
 					continue
 				}
-				d.Infof("")
 
-				for _, sample := range lparData.SystemUtil.UtilSamples {
-
-					switch sample.SampleInfo.Status {
-					case 1:
-						// if sample sample.SampleInfo.Statusstatus equal 1 we have no data in this sample
-						d.Infof("| SYSTEM [%s] | LPAR [%s] | Skipping sample. Error in sample collection: %s\n", system.Name, link, sample.SampleInfo.ErrorInfo[0].ErrMsg)
-						continue
-					case 2:
-						// if sample sample.SampleInfo.Statusstatus equal 2 there is some error message but could continue
-						d.Warnf("| SYSTEM [%s] | LPAR [%s] | SAMPLE Status 2: %s", system.Name, link, sample.SampleInfo.ErrorInfo[0].ErrMsg)
-					}
-
-					timestamp, timeerr := time.Parse(timeFormat, sample.SampleInfo.TimeStamp)
-					if timeerr != nil {
-						d.Errorf("| SYSTEM [%s] | LPAR [%s] | Error on sample timestamp formating ERROR:%s", system.Name, link, timeerr)
-						continue
-					}
-
-					//LparUtil
-					d.GenerateLparMeasurements(points, system.Name, timestamp, sample.LparsUtil)
-				}
+				//LparUtil
+				d.GenerateLparMeasurements(points, system.SystemName, timestamp, sample.LparsUtil)
 			}
+
 		}
 	}
 	return nil

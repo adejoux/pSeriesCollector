@@ -13,7 +13,8 @@ export class HMCServerService {
     jsonParser(key,value) {
         console.log("KEY: "+key+" Value: "+value);
         if ( key == 'Port' ||
-             key == 'Freq' ) {
+             key == 'Freq' ||
+             key == 'UpdateScanFreq') {
             return parseInt(value);
         }
         if ( key == 'Active'||

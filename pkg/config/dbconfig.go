@@ -36,7 +36,8 @@ type HMCCfg struct {
 	Active             bool `xorm:"'active' default 1"`
 	ManagedSystemsOnly bool `xorm:"'managed_systems_only' default 0"`
 
-	Freq int `xorm:"'freq' default 60" binding:"Default(60);IntegerNotZero"`
+	Freq           int `xorm:"'freq' default 60" binding:"Default(60);IntegerNotZero"`
+	UpdateScanFreq int `xorm:"'update_scan_freq' default 60" binding:"Default(60);UIntegerAndLessOne"`
 
 	OutDB       string `xorm:"outdb"`
 	LogLevel    string `xorm:"loglevel" binding:"Default(info)"`

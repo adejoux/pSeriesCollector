@@ -49,7 +49,7 @@
         <div class="col-md-12" *ngIf="runtime_dev">
             <div class="row">
                 <div class="col-md-6" *ngIf="runtime_dev['DeviceConnected'] !== false">
-                    <div class="panel panel-default col-md-12" style="padding-left: 0px; padding-right: 0px;">
+                    <!--div class="panel panel-default col-md-12" style="padding-left: 0px; padding-right: 0px;">
                         <div class="panel-heading"><span class="text-primary glyphicon glyphicon-info-sign" style="margin-top: 2px; margin-right: 10px"></span>SysInfo</div>
                         <div class="panel-body" style="overflow-x: scroll !important">
                             <table class="table-striped table-bordered">
@@ -59,9 +59,9 @@
                                 </tr>
                             </table>
                         </div>
-                    </div>
+                    </div-->
                     <div class="panel panel-default col-md-12" style="padding-left: 0px; padding-right: 0px;">
-                        <div class="panel-heading"><span class="text-primary glyphicon glyphicon-dashboard" style="margin-top: 2px; margin-right: 10px"></span>Statistics SNMP Device</div>
+                        <div class="panel-heading"><span class="text-primary glyphicon glyphicon-dashboard" style="margin-top: 2px; margin-right: 10px"></span>Statistics HMC Device</div>
                         <div class="panel-body">
                             <table class="table-striped table-bordered" style="width: 100%">
                                 <tr>
@@ -150,7 +150,20 @@
                                         </div>
                                     </div>
                                 </li>
-                                <!--  SNMP Protocol Debug -->
+                                <!--  Force HMC Scan Update -->
+                                <li class="list-group-item">
+                                    <div class="row">
+                                        <div class="col-md-8 text-left">
+                                            <span>Force HMC Scan Update</span>
+                                            <span class="glyphicon glyphicon-question-sign" tooltip="Force Filter update on next gathering cycle "></span>
+                                            <span>Pending Cycles: {{ runtime_dev['Stats'].ReloadLoopsPending }} </span>
+                                        </div>
+                                        <div class="col-md-4 text-right">
+                                            <button type="button" (click)="forceHMCScan(runtime_dev.ID)" [ngClass]="'btn btn-primary'">Force Now</button>
+                                        </div>
+                                    </div>
+                                </li>
+                                <!--  HMC HTTP API Protocol Debug -->
                                 <li class="list-group-item">
                                     <div class="row">
                                         <div class="col-md-7 text-left">

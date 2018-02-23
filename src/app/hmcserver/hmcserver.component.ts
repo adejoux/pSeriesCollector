@@ -70,6 +70,7 @@ export class HMCServerComponent implements OnInit {
       Active: [this.sampleComponentForm ? this.sampleComponentForm.value.Active : 'true', Validators.required],
       ManagedSystemsOnly: [this.sampleComponentForm ? this.sampleComponentForm.value.ManagedSystemsOnly : 'false', Validators.required],
       Freq: [this.sampleComponentForm ? this.sampleComponentForm.value.Freq : 60, Validators.required],
+      UpdateScanFreq: [this.sampleComponentForm ? this.sampleComponentForm.value.UpdateScanFreq : 60, Validators.required],
       OutDB: [this.sampleComponentForm ? this.sampleComponentForm.value.OutDB : '', Validators.required],
       LogLevel: [this.sampleComponentForm ? this.sampleComponentForm.value.LogLevel : 'info', Validators.required],
       HMCAPIDebug: [this.sampleComponentForm ? this.sampleComponentForm.value.HMCAPIDebug : 'false', Validators.required],

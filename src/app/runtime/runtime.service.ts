@@ -105,6 +105,14 @@ export class RuntimeService {
         }
     };
 
+    forceHMCScan(id : string) {
+        // return an observable
+        return this.httpAPI.get('/api/rt/device/forcehmcscan/'+id)
+        .map( (responseData) =>
+            responseData.json()
+        )
+    };
+
 
     forceHMCReset(id : string, mode: string) {
         // return an observable

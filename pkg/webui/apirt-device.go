@@ -24,6 +24,7 @@ func NewAPIRtDevice(m *macaron.Macaron) error {
 		m.Get("/forcegather/:id", reqSignedIn, RTForceGather)
 		m.Put("/log/setloglevel/:id/:level", reqSignedIn, RTSetLogLevelDev)
 		m.Get("/log/getdevicelog/:id", reqSignedIn, RTGetLogFileDev)
+		m.Get("/forcehmcscan/:id", reqSignedIn, RTForceHMCScan)
 	})
 
 	return nil
@@ -32,6 +33,19 @@ func NewAPIRtDevice(m *macaron.Macaron) error {
 /****************/
 /*Runtime Info
 /****************/
+
+// RTForceFltUpdate xx
+func RTForceHMCScan(ctx *Context) {
+	id := ctx.Params(":id")
+	d, err := agent.GetDevice(id)
+	if err != nil {
+		ctx.JSON(404, err.Error())
+		return
+	}
+	log.Infof("trying to force filter for device %s", id)
+	d.ForceHMCScan()
+	ctx.JSON(200, "OK")
+}
 
 // RTGetLogFileDev get file dev
 func RTGetLogFileDev(ctx *Context) {
