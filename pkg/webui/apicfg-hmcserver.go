@@ -23,6 +23,7 @@ func NewAPICfgHMCServer(m *macaron.Macaron) error {
 		m.Get("/:id", reqSignedIn, GetHMCServerServerByID)
 		m.Get("/checkondel/:id", reqSignedIn, GetHMCServerAffectOnDel)
 		m.Post("/ping/", reqSignedIn, bind(config.HMCCfg{}), PingHMCServer)
+		m.Post("/import", reqSignedIn, bind(config.HMCCfg{}), ImportHMCDevices)
 	})
 
 	return nil
@@ -121,4 +122,84 @@ func PingHMCServer(ctx *Context, cfg config.HMCCfg) {
 		res := result{Result: "OK", Elapsed: elapsed, Message: message}
 		ctx.JSON(200, res)
 	}
+}
+
+// ImportHMCDevices new snmpdevice to de internal BBDD --pending--
+func ImportHMCDevices(ctx *Context, dev config.HMCCfg) {
+	log.Warningf("Importing HMC devices for HMC: %s", dev.ID)
+	ses, _, _, err := hmc.Ping(&dev, log, false, "")
+	if err != nil {
+		log.Errorf("Error on Ping HMC Server %s: Err: %s", dev.ID, err)
+		ctx.JSON(404, err.Error())
+		return
+	}
+
+	devices, err := hmc.ScanHMC(ses)
+	if err != nil {
+		log.Errorf("Error on Scan HMC Server %s: Err: %s", dev.ID, err)
+		ctx.JSON(404, err.Error())
+		return
+	}
+
+	for smid, sm := range devices {
+		d := &config.DeviceCfg{
+			ID:             sm.UUID,
+			Name:           sm.SystemName,
+			SerialNumber:   "xxxxx",
+			OSVersion:      "osversion",
+			Type:           "Managed",
+			Location:       dev.ID,
+			EnableHMCStats: true,
+			//Nmon properties doesn't apply here
+		}
+
+		log.Infof("Importing Managed System: %s | %s", smid, sm.SystemName)
+
+		agent.MainConfig.Database.AddOrUpdateDeviceCfg(d)
+
+		for lparid, lpar := range sm.Lpars {
+			log.Infof("Importing Lpar System: %s | %s", lparid, lpar.PartitionName)
+			//Pending add some kind of name resolution to check NMon connectivity.
+			// net.Dial
+			d := &config.DeviceCfg{
+				ID:              lpar.PartitionUUID,
+				Name:            lpar.PartitionName,
+				SerialNumber:    lpar.LogicalSerialNumber,
+				OSVersion:       lpar.OperatingSystemVersion,
+				Type:            lpar.PartitionType,
+				Location:        sm.SystemName,
+				EnableHMCStats:  true,
+				EnableNmonStats: true,
+				NmonFreq:        60,
+				NmonIP:          "",
+				NmonLogLevel:    "info",
+				NmonOutDB:       "default",
+				NmonSSHUser:     "",
+				NmonSSHKey:      "",
+			}
+			agent.MainConfig.Database.AddOrUpdateDeviceCfg(d)
+		}
+		for lparid, lpar := range sm.Vios {
+			log.Infof("Importing Vios System: %s | %s", lparid, lpar.PartitionName)
+			d := &config.DeviceCfg{
+				ID:              lpar.PartitionUUID,
+				Name:            lpar.PartitionName,
+				SerialNumber:    lpar.LogicalSerialNumber,
+				OSVersion:       lpar.OperatingSystemVersion,
+				Type:            lpar.PartitionType,
+				Location:        sm.SystemName,
+				EnableHMCStats:  true,
+				EnableNmonStats: true,
+				NmonFreq:        60,
+				NmonIP:          "",
+				NmonLogLevel:    "info",
+				NmonOutDB:       "default",
+				NmonSSHUser:     "",
+				NmonSSHKey:      "",
+			}
+			agent.MainConfig.Database.AddOrUpdateDeviceCfg(d)
+		}
+	}
+
+	ctx.JSON(200, &devices)
 }

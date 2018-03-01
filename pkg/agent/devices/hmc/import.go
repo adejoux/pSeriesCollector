@@ -11,9 +11,7 @@ import (
 const timeFormat = "2006-01-02T15:04:05-0700"
 
 // GenerateServerMeasurements generate measurements for HMC Managed servers
-func (d *HMCServer) GenerateServerMeasurements(pa *PointArray, sysname string, t time.Time, s hmcpcm.ServerData) {
-
-	Tags := utils.MapDupAndAdd(d.TagMap, map[string]string{"system": sysname})
+func (d *HMCServer) GenerateServerMeasurements(pa *PointArray, Tags map[string]string, t time.Time, s hmcpcm.ServerData) {
 
 	fieldproc := map[string]interface{}{
 		"TotalProcUnits":        s.Processor.TotalProcUnits[0],
@@ -49,13 +47,29 @@ func (d *HMCServer) GenerateServerMeasurements(pa *PointArray, sysname string, t
 }
 
 // GenerateViosMeasurements generate measurementes for VIOS servers
-func (d *HMCServer) GenerateViosMeasurements(pa *PointArray, sysname string, t time.Time, v []hmcpcm.ViosData) {
-
-	Tags := utils.MapDupAndAdd(d.TagMap, map[string]string{"system": sysname})
+func (d *HMCServer) GenerateViosMeasurements(pa *PointArray, Tags map[string]string, t time.Time, v []hmcpcm.ViosData) {
 
 	for _, vios := range v {
+		//Check if this vios exist in the device catalog and is enabled
+		devcfg, err := db.GetDeviceCfgByID(vios.UUID)
+		if err != nil {
+			d.Warnf("Any Device in the DB with this name/uuid for VIOS [%s] - [%s]", vios.Name, vios.UUID)
+			continue
+		}
+		if devcfg.EnableHMCStats == false {
+			d.Infof("Skeeping Data Importation for Disabled VIOS [%s] - [%s]", vios.Name, vios.UUID)
+			continue
+		}
+
+		//Getting custom Tags for VIOS
 
 		ViosTags := utils.MapDupAndAdd(Tags, map[string]string{"partition": vios.Name})
+
+		ViosCustomTags, err := utils.KeyValArrayToMap(devcfg.ExtraTags)
+		if err != nil {
+			d.Warnf("Warning on Device  %s Tag gathering: %s", err)
+		}
+		utils.MapAdd(ViosTags, ViosCustomTags)
 
 		for _, scsi := range vios.Storage.GenericPhysicalAdapters {
 
@@ -165,9 +179,7 @@ func (d *HMCServer) GenerateViosMeasurements(pa *PointArray, sysname string, t t
 }
 
 // GenerateLparMeasurements generate measurements for LPAR servers
-func (d *HMCServer) GenerateLparMeasurements(pa *PointArray, sysname string, t time.Time, l []hmcpcm.LparData) {
-
-	Tags := utils.MapDupAndAdd(d.TagMap, map[string]string{"system": sysname})
+func (d *HMCServer) GenerateLparMeasurements(pa *PointArray, Tags map[string]string, t time.Time, l []hmcpcm.LparData) {
 
 	for _, lpar := range l {
 
@@ -287,17 +299,11 @@ func (d *HMCServer) GenerateLparMeasurements(pa *PointArray, sysname string, t t
 func (d *HMCServer) ScanHMCDevices() error {
 	d.Infof("Scanning  managed systems")
 
-	mdata, err := d.Session.GetManagedSystems()
+	var err error
+	d.System, err = ScanHMC(d.Session)
 	if err != nil {
 		d.Infof("ERROR on get Managed Systems: %s", err)
 		return err
-	}
-
-	//d.MData = mdata
-	d.System = make(map[string]*hmcpcm.ManagedSystem)
-
-	for _, entry := range mdata.Entries {
-		d.System[entry.ID] = &entry.Contents[0].System[0]
 	}
 	return nil
 }
@@ -310,9 +316,30 @@ func (d *HMCServer) ImportData(points *PointArray) error {
 	}
 
 	for _, system := range d.System {
-		//Pending an  easy and powerfull filtering system
 
-		d.Infof("| SYSTEM [%s] | Init processing...", system.SystemName)
+		//Check if this system exist in the device catalog and
+		devcfg, err := db.GetDeviceCfgByID(system.UUID)
+		if err != nil {
+			d.Warnf("Any Device in the DB with this name/uuid for SM [%s] - [%s]", system.SystemName, system.UUID)
+			continue
+		}
+		if devcfg.EnableHMCStats == false {
+			d.Infof("Skeeping Data Importation for Disabled SM [%s] - [%s]", system.SystemName, system.UUID)
+			continue
+		}
+
+		//Getting custom Tags for SM
+		Tags := utils.MapDupAndAdd(d.TagMap, map[string]string{"system": system.SystemName})
+
+		SMTags, err := utils.KeyValArrayToMap(devcfg.ExtraTags)
+		if err != nil {
+			d.Warnf("Warning on Device  %s Tag gathering: %s", err)
+		}
+		utils.MapAdd(Tags, SMTags)
+
+		//Init SM Data Gathering
+
+		d.Infof("| SYSTEM [%s] | Init data gathering for SM ...", system.SystemName)
 
 		// Get Managed System PCM metrics
 		data, dataerr := d.Session.GetSysPCMData(system)
@@ -341,10 +368,10 @@ func (d *HMCServer) ImportData(points *PointArray) error {
 			}
 
 			//ServerUtil
-			d.GenerateServerMeasurements(points, system.SystemName, timestamp, sample.ServerUtil)
+			d.GenerateServerMeasurements(points, Tags, timestamp, sample.ServerUtil)
 
 			//ViosUtil
-			d.GenerateViosMeasurements(points, system.SystemName, timestamp, sample.ViosUtil)
+			d.GenerateViosMeasurements(points, Tags, timestamp, sample.ViosUtil)
 
 		}
 
@@ -353,6 +380,26 @@ func (d *HMCServer) ImportData(points *PointArray) error {
 		}
 
 		for _, lpar := range system.Lpars {
+
+			//Check if this system exist in the device catalog and
+			devcfg, err := db.GetDeviceCfgByID(lpar.PartitionUUID)
+			if err != nil {
+				d.Warnf("Any Device in the DB with this name/uuid for LPAR [%s] - [%s]", lpar.PartitionName, lpar.PartitionUUID)
+				continue
+			}
+			if devcfg.EnableHMCStats == false {
+				d.Infof("Skeeping Data Importation for Disabled LPAR [%s] - [%s]", lpar.PartitionName, lpar.PartitionUUID)
+				continue
+			}
+
+			LparTags, err := utils.KeyValArrayToMap(devcfg.ExtraTags)
+			if err != nil {
+				d.Warnf("Warning on Device  %s Tag gathering: %s", err)
+			}
+			utils.MapAdd(Tags, LparTags)
+
+			//Init SM Data Gathering
+
 			d.Infof("| SYSTEM [%s] | LPAR [%s] | Init LPAR gathering", system.SystemName, lpar.PartitionName)
 			//need to parse the link because the specified hostname can be different
 			//of the one specified by the user and the auth cookie will not match
@@ -383,7 +430,7 @@ func (d *HMCServer) ImportData(points *PointArray) error {
 				}
 
 				//LparUtil
-				d.GenerateLparMeasurements(points, system.SystemName, timestamp, sample.LparsUtil)
+				d.GenerateLparMeasurements(points, Tags, timestamp, sample.LparsUtil)
 			}
 
 		}

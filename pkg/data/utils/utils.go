@@ -1,9 +1,10 @@
 package utils
 
 import (
-	"time"
-
+	"fmt"
 	"github.com/Sirupsen/logrus"
+	"strings"
+	"time"
 )
 
 // WaitAlignForNextCycle waiths untile a next cycle begins aligned with second 00 of each minute
@@ -93,4 +94,30 @@ func MapDupAndAdd(source, add map[string]string) map[string]string {
 		RetMap[k] = v
 	}
 	return RetMap
+}
+
+// KeyValArrayToMap return a map from a key value array
+func KeyValArrayToMap(keyvalar []string) (map[string]string, error) {
+	ret := make(map[string]string)
+	if len(keyvalar) > 0 {
+		for _, keyval := range keyvalar {
+			s := strings.Split(keyval, "=")
+			if len(s) == 2 {
+				key, value := s[0], s[1]
+				ret[key] = value
+			} else {
+				return ret, fmt.Errorf("Error on tag definition KEY=VALUE definition [ %s ]", keyval)
+			}
+		}
+	} else {
+		return ret, fmt.Errorf("No key value detected ")
+	}
+	return ret, nil
+}
+
+// MapAdd Add map to devices
+func MapAdd(dest map[string]string, orig map[string]string) {
+	for k, v := range orig {
+		dest[k] = v
+	}
 }

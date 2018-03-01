@@ -151,7 +151,7 @@ func init() {
 	output.SetLogger(log)
 	selfmon.SetLogger(log)
 
-	hmc.SetDBConfig(&agent.DBConfig)
+	hmc.SetDBConfig(&agent.DBConfig, &agent.MainConfig.Database)
 	hmc.SetLogDir(logDir)
 
 	webui.SetLogger(log)

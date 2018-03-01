@@ -14,6 +14,7 @@ import { WindowRef } from '../common/windowref';
 import { HMCServerComponent } from '../hmcserver/hmcserver.component';
 import { InfluxServerCfgComponent } from '../influxserver/influxservercfg.component';
 import { RuntimeComponent } from '../runtime/runtime.component';
+import { DeviceCfgComponent } from '../device/devicecfg.component';
 import { NavbarComponent } from './navbar/navbar.component';
 import { SideMenuComponent } from './sidemenu/sidemenu.component';
 
@@ -49,6 +50,7 @@ export class HomeComponent {
   [
     {'title': 'Influx DB Servers ', 'selector' : 'ifxserver-component', 'type': 'component', 'data': InfluxServerCfgComponent},
     {'title': 'HMC Servers', 'selector' : 'hmcserver-component', 'type': 'component', 'data': HMCServerComponent},
+    {'title': 'Devices', 'selector' : 'devicecfg-component', 'type': 'component', 'data': DeviceCfgComponent},
   ]
   },
   {'groupName' : 'Data Service', 'icon': 'glyphicon glyphicon-paste', 'expanded': true, 'items':

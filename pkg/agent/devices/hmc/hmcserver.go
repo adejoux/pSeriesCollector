@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -19,12 +18,14 @@ import (
 
 var (
 	cfg    *config.DBConfig
+	db     *config.DatabaseCfg
 	logDir string
 )
 
 // SetDBConfig set agent config
-func SetDBConfig(c *config.DBConfig) {
+func SetDBConfig(c *config.DBConfig, d *config.DatabaseCfg) {
 	cfg = c
+	db = d
 }
 
 // SetLogDir set log dir
@@ -91,6 +92,20 @@ func Ping(c *config.HMCCfg, log *logrus.Logger, apidbg bool, filename string) (*
 	}
 	elapsed := time.Since(start)
 	return Session, elapsed, "test", nil
+}
+
+//ScanHMC scan hmc
+func ScanHMC(ses *hmcpcm.Session) (map[string]*hmcpcm.ManagedSystem, error) {
+	ret := make(map[string]*hmcpcm.ManagedSystem)
+	data, err := ses.GetManagedSystems()
+	if err != nil {
+		return ret, fmt.Errorf("ERROR on get Managed Systems: %s", err)
+	}
+
+	for _, entry := range data.Entries {
+		ret[entry.ID] = &entry.Contents[0].System[0]
+	}
+	return ret, nil
 }
 
 // New create and Initialice a device Object
@@ -324,19 +339,12 @@ func (d *HMCServer) Init(c *config.HMCCfg) error {
 
 	d.TagMap[d.cfg.DeviceTagName] = val
 
-	if len(d.cfg.ExtraTags) > 0 {
-		for _, tag := range d.cfg.ExtraTags {
-			s := strings.Split(tag, "=")
-			if len(s) == 2 {
-				key, value := s[0], s[1]
-				d.TagMap[key] = value
-			} else {
-				d.Errorf("Error on tag definition TAG=VALUE [ %s ]", tag)
-			}
-		}
-	} else {
-		d.Warnf("No map detected in device")
+	ExtraTags, err := utils.KeyValArrayToMap(d.cfg.ExtraTags)
+	if err != nil {
+		d.Warnf("Warning on Device  %s Tag gathering: %s", err)
 	}
+	utils.MapAdd(d.TagMap, ExtraTags)
+
 	// Init stats
 	d.stats.Init(d.cfg.ID, d.TagMap, d.log)
 

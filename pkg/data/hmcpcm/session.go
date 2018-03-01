@@ -184,7 +184,7 @@ func (s *Session) GetSysPCMData(system *ManagedSystem) (PCMData, error) {
 
 // GetLparPCMData get PCM for Lpar systems
 func (s *Session) GetLparPCMData(system *ManagedSystem, lpar *LogicalPartition) (PCMData, error) {
-	s.Infof("Gathering data for system[%s] LPAR [%s] ", lpar.PartitionName, lpar.PartitionName)
+	s.Infof("Gathering data for system[%s] LPAR [%s] ", system.SystemName, lpar.PartitionName)
 	lparurl := s.url + "/rest/api/pcm/ManagedSystem/" + system.UUID + "/LogicalPartition/" + lpar.PartitionUUID + "/ProcessedMetrics?NoOfSamples=" + strconv.Itoa(s.samples)
 	//Get JSON Link
 	link, err := s.getPCMLink(lparurl)

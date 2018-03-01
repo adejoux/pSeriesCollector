@@ -86,4 +86,9 @@ export class HMCServerService {
         return this.http.post('/api/cfg/hmcserver/ping/',JSON.stringify(influxserver,this.jsonParser), null, hideAlert)
         .map((responseData) => responseData.json());
       };
+      importHMCDevices(influxserver,hideAlert?) {
+        // return an observable
+        return this.http.post('/api/cfg/hmcserver/import/',JSON.stringify(influxserver,this.jsonParser), null, hideAlert)
+        .map((responseData) => responseData.json());
+      };
 }

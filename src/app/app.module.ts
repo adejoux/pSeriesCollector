@@ -57,6 +57,7 @@ import { ExportFileModal } from './common/dataservice/export-file-modal'
 import { HMCServerComponent } from './hmcserver/hmcserver.component';
 import { InfluxServerCfgComponent } from './influxserver/influxservercfg.component';
 import { RuntimeComponent } from './runtime/runtime.component';
+import { DeviceCfgComponent } from './device/devicecfg.component';
 
 @NgModule({
   bootstrap: [App],
@@ -79,6 +80,7 @@ import { RuntimeComponent } from './runtime/runtime.component';
     InfluxServerCfgComponent,
     HMCServerComponent,
     RuntimeComponent,
+    DeviceCfgComponent,
     App,
   ],
   imports: [
@@ -111,6 +113,7 @@ import { RuntimeComponent } from './runtime/runtime.component';
       BlockUIComponent,
       HMCServerComponent,
       InfluxServerCfgComponent,
+      DeviceCfgComponent,
       RuntimeComponent
     ]
 })

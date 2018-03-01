@@ -91,6 +91,20 @@ export class HMCServerComponent implements OnInit {
       },
     () =>  { console.log("DONE")}
   );
+  
+}
+
+
+importHMCDevices(data:any) {
+  this.hmcserverService.importHMCDevices(data, true)
+  .subscribe(
+  data =>  this.alertHandler = {msg: 'HCM Version: '+data['Message'], result : data['Result'], elapsed: data['Elapsed'], type: 'success', closable: true},
+  err => {
+      let error = err.json();
+      this.alertHandler = {msg: error['Message'], elapsed: error['Elapsed'], result : error['Result'], type: 'danger', closable: true}
+    },
+  () =>  { console.log("DONE")}
+);
 }
 
   reloadData() {

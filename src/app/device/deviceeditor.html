@@ -1,0 +1,193 @@
+<h2>{{defaultConfig.name}}</h2>
+<ng-container [ngSwitch]="editmode">
+  <ng-template ngSwitchCase="list">
+    <test-modal #viewModal titleName='Devices'></test-modal>
+    <test-modal #viewModalDelete titleName='Deleting:' [customMessage]="['Deleting this  Device will affect the following components','Deleting this InfluxDB Server will NOT affect any component. Safe delete']" [customMessageClass]="['alert alert-danger','alert alert-success']"
+        [showValidation]="true" [textValidation]="'Delete'" [controlSize]="true" (validationClicked)="deleteDeviceCfg($event)">
+    </test-modal>
+    <!--export-file-modal #exportFileModal [showValidation]="true" [exportType]="defaultConfig['slug']" [textValidation]="'Export'" titleName='Exporting:'></export-file-modal-->
+    <table-list #listTableComponent [typeComponent]="defaultConfig['slug']" [data]="data" [columns]="defaultConfig['table-columns']" [counterItems]="counterItems" [counterErrors]="counterErrors" [selectedArray]="selectedArray" [isRequesting]="isRequesting" [tableRole]="tableRole"
+    [sanitizeCell]="cellParser" [roleActions]="overrideRoleActions" (customClicked)="customActions($event)"></table-list>
+  </ng-template>
+  <ng-template ngSwitchDefault>
+    <form [formGroup]="deviceForm" class="form-horizontal" (ngSubmit)="editmode === 'create' ? saveDeviceCfg() : updateDeviceCfg()">
+      <ng-container>
+        <div class="row well well-sm">
+          <h4 style="display:inline">
+          <i class="glyphicon glyphicon-cog text-info"></i> {{ editmode | uppercase}}
+        </h4>
+        <div class="pull-right" style="margin-right: 20px">
+          <div style="display:inline" tooltip='Test Connection' container=body><button class="btn btn-info" type="button" (click)="testDeviceCfgConnection()" [disabled]="!deviceForm.valid"> <i class="glyphicon glyphicon-flash"></i></button></div>
+          <div style="display:inline" tooltip='Submit' container=body><button class="btn btn-success" type="submit" [disabled]="!deviceForm.valid"> <i class="glyphicon glyphicon-ok-circle"></i></button></div>
+          <div style="display:inline" tooltip='Reset' container=body><button class="btn btn-warning" type="reset" [disabled]="!deviceForm.dirty"><i class="glyphicon glyphicon-ban-circle"></i> </button></div>
+          <div style="display:inline" tooltip='Cancel' container=body><button class="btn btn-danger" type="button" (click)="cancelEdit()"><i class="glyphicon glyphicon-remove-circle"></i></button></div>
+        </div>
+      </div>
+    </ng-container>
+    <div class="form-fixed-height">
+    <div class="well well-sm">
+      <span class="editsection">
+        Server Settings
+      </span>
+      <div class="form-group" style="margin-top: 25px">
+        <label class="control-label col-sm-2" for="ID">ID</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Unique identifier of the Device"></i>
+        <div class="col-sm-9">
+          <input formControlName="ID" id="ID" [ngModel]="deviceForm.value.ID"/>
+          <control-messages [control]="deviceForm.controls.ID"></control-messages>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="control-label col-sm-2" for="Name">Name</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Name identificator"></i>
+        <div class="col-sm-9">
+          <input formControlName="Name" id="Name"  [ngModel]="deviceForm.value.Name" />
+          <control-messages [control]="deviceForm.controls.Name"></control-messages>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="control-label col-sm-2" for="SerialNumber">SerialNumber</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Serial number "></i>
+        <div class="col-sm-9">
+          <input formControlName="SerialNumber" id="SerialNumber" [ngModel]="deviceForm.value.SerialNumber"/>
+          <control-messages [control]="deviceForm.controls.SerialNumber"></control-messages>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="control-label col-sm-2" for="OSVersion">OSVersion</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="OS Version"></i>
+        <div class="col-sm-9">
+          <input formControlName="OSVersion" id="OSVersion" [ngModel]="deviceForm.value.OSVersion"/>
+          <control-messages [control]="deviceForm.controls.OSVersion"></control-messages>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="control-label col-sm-2" for="Type">Type</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Device Typa"></i>
+        <div class="col-sm-9">
+          <input formControlName="Type" id="Type" [ngModel]="deviceForm.value.Type"/>
+          <control-messages [control]="deviceForm.controls.Type"></control-messages>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="control-label col-sm-2" for="Location">Location</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Location"></i>
+        <div class="col-sm-9">
+          <input formControlName="Location" id="Location" [ngModel]="deviceForm.value.Location"/>
+          <control-messages [control]="deviceForm.controls.Location"></control-messages>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top: 25px">
+        <label class="control-label col-sm-2" for="EnableHMCStats">EnableHMCStats</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Enable or disables HMC stats "></i>
+        <div class="col-sm-9">
+          <select formControlName="EnableHMCStats" id="EnableHMCStats" [ngModel]="deviceForm.value.EnableHMCStats">
+            <option value="true">True</option>
+            <option value="false">False</option>
+            </select>
+          <control-messages [control]="deviceForm.controls.EnableHMCStats"></control-messages>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top: 25px">
+        <label class="control-label col-sm-2" for="EnableNmonStats">EnableNmonStats</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Enable or disables Nmon stats "></i>
+        <div class="col-sm-9">
+          <select formControlName="EnableNmonStats" id="EnableNmonStats" [ngModel]="deviceForm.value.EnableNmonStats">
+            <option value="true">True</option>
+            <option value="false">False</option>
+            </select>
+          <control-messages [control]="deviceForm.controls.EnableNmonStats"></control-messages>
+        </div>
+      </div>
+      <!--div class="form-group">
+      <div *ngIf="alertHandler" class="col-md-offset-2 col-sm-5" >
+        <div [ngClass]="['panel-body', 'bg-'+alertHandler.type,'text-'+alertHandler.type]">
+          <span>{{alertHandler.result}} - Ping elapsed: {{alertHandler.elapsed / 1000000 }} ms</span>
+          <p>{{alertHandler.msg}}</p>
+        </div>
+      </div>
+      </div-->
+    </div>
+    <div class="well well-sm">
+      <span class="editsection">Nmon Settings</span>
+      <div class="form-group" style="margin-top: 25px">
+        <label class="control-label col-sm-2" for="NmonFreq">NmonFreq</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Nmon Freq Gathering"></i>
+        <div class="col-sm-9">
+          <input formControlName="NmonFreq" id="NmonFreq" [ngModel]="deviceForm.value.NmonFreq"/>
+          <control-messages [control]="deviceForm.controls.NmonFreq"></control-messages>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="control-label col-sm-2" for="NmonOutDB">InfluxDB Server for Nmon data</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="InfluxDB server for Nmon data"></i>
+        <div class="col-sm-9">
+          <ss-multiselect-dropdown [options]="selectinfluxservers" formControlName="NmonOutDB" [texts]="myTexts" [settings]="mySettingsInflux" [ngModel]="deviceForm.value.NmonOutDB"></ss-multiselect-dropdown>
+          <control-messages [control]="deviceForm.controls.NmonOutDB"></control-messages>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top: 25px">
+        <label class="control-label col-sm-2" for="NmonIP">NmonIP</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Nmon IP for direcct connection without DNS resolution"></i>
+        <div class="col-sm-9">
+          <input formControlName="NmonIP" id="NmonIP" [ngModel]="deviceForm.value.NmonIP"/>
+          <control-messages [control]="deviceForm.controls.NmonIP"></control-messages>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="control-label col-sm-2" for="NmonSSHUser">NmonSSHUser</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Authentification user to the SSH conection"></i>
+        <div class="col-sm-9">
+          <input formControlName="NmonSSHUser" id="NmonSSHUser"  [ngModel]="deviceForm.value.NmonSSHUser"/>
+          <control-messages [control]="deviceForm.controls.NmonSSHUser"></control-messages>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="control-label col-sm-2" for="NmonSSHKey">NmonSSHKey</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Authentification password/file to the DB of the user {{deviceForm.value.User}}"></i>
+        <div class="col-sm-9">
+          <input #inputPassword formControlName="NmonSSHKey" id="NmonSSHKey" type="password"  [ngModel]="deviceForm.value.NmonSSHKey"/>
+          <i style="margin-left:-25px; margin-right:6px" [ngClass]="inputPassword.type === 'password' ? ['glyphicon glyphicon-eye-open text-primary'] : ['glyphicon glyphicon-eye-close text-primary']" passwordToggle [input]="inputPassword"> </i>
+          <control-messages [control]="deviceForm.controls.NmonSSHKey"></control-messages>
+        </div>
+      </div>
+      <div class="form-group" >
+        <label class="control-label col-sm-2" for="NmonLogLevel">Nmon Log level</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Severity log level for Nmon loading devices"></i>
+        <div class="col-sm-9">
+          <select formControlName="NmonLogLevel" id="NmonLogLevel" [ngModel]="deviceForm.value.NmonLogLevel">
+            <option value="panic">Panic</option>
+            <option value="fatal">Fatal</option>
+            <option value="error">Error</option>
+            <option value="warn">Warning</option>
+            <option selected="selected" value="info">Info</option>
+            <option value="debug">Debug</option>
+          </select>
+          <control-messages [control]="deviceForm.controls.NmonLogLevel"></control-messages>
+        </div>
+      </div>
+  </div>
+
+  <div class="well well-sm">
+    <span class="editsection">Extra Settings</span>
+      <div class="form-group" style="margin-top: 25px">
+        <label class="control-label col-sm-2" for="ExtraTags">ExtraTags</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Tag's value to identify the device in InfluxDB"></i>
+        <div class="col-sm-9">
+          <input formControlName="ExtraTags" id="ExtraTags" [ngModel]="deviceForm.value.ExtraTags" />
+          <control-messages [control]="deviceForm.controls.ExtraTags"></control-messages>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="control-label col-sm-2" for="Description">Description</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Description of the InfluxDB Server"></i>
+        <div class="col-sm-9">
+          <textarea class="form-control" style="width: 50%" rows="2" formControlName="Description" id="Description" [ngModel]="deviceForm.value.Description"> </textarea>
+          <control-messages [control]="deviceForm.controls.Description"></control-messages>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+  </ng-template>
+</ng-container>

@@ -15,6 +15,9 @@
         <div class="row well well-sm">
           <h4 style="display:inline"><i class="glyphicon glyphicon-cog text-info"></i> {{ editmode | uppercase}}</h4>
           <div class="pull-right" style="margin-right: 20px">
+            <div style="display:inline" tooltip='Import Devices' container=body>
+                <button class="btn btn-info" type="button" (click)="importHMCDevices(sampleComponentForm.value)" [disabled]="!sampleComponentForm.valid"> <i class="glyphicon glyphicon-save"></i></button>
+            </div>
             <div style="display:inline" tooltip='Test Connection' container=body>
                 <button class="btn btn-info" type="button" (click)="testHMCServerConnection(sampleComponentForm.value)" [disabled]="!sampleComponentForm.valid"> <i class="glyphicon glyphicon-flash"></i></button>
             </div>

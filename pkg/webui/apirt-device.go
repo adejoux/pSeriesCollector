@@ -34,7 +34,7 @@ func NewAPIRtDevice(m *macaron.Macaron) error {
 /*Runtime Info
 /****************/
 
-// RTForceFltUpdate xx
+// RTForceHMCScan force scan for HMC devices
 func RTForceHMCScan(ctx *Context) {
 	id := ctx.Params(":id")
 	d, err := agent.GetDevice(id)

@@ -85,6 +85,9 @@ func (dbc *DatabaseCfg) InitDB() {
 		log.Fatalf("Fail to sync database HMCConfig: %v\n", err)
 	}
 
+	if err = dbc.x.Sync(new(DeviceCfg)); err != nil {
+		log.Fatalf("Fail to sync database DeviceCfg: %v\n", err)
+	}
 }
 
 //LoadDbConfig get data from database
@@ -99,6 +102,12 @@ func (dbc *DatabaseCfg) LoadDbConfig(cfg *DBConfig) {
 
 	//Load HMC engines map
 	cfg.HMC, err = dbc.GetHMCCfgMap("")
+	if err != nil {
+		log.Warningf("Some errors on get Influx Ouput servers URL :%v", err)
+	}
+
+	//Load Devices map
+	cfg.Devices, err = dbc.GetDeviceCfgMap("")
 	if err != nil {
 		log.Warningf("Some errors on get Influx Ouput servers URL :%v", err)
 	}

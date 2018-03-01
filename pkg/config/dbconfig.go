@@ -50,10 +50,6 @@ type HMCCfg struct {
 	ExtraTags      []string `xorm:"extra-tags"`
 
 	Description string `xorm:"description"`
-
-	//Filters for measurements
-	//	MeasurementGroups []string `xorm:"-"`
-	//	MeasFilters       []string `xorm:"-"`
 }
 
 // TableName go-xorm way to set the Table name to something different to "alert_h_t_t_p_out_rel"
@@ -61,10 +57,40 @@ func (HMCCfg) TableName() string {
 	return "hmc_cfg"
 }
 
+// DEVICE TABLE
+
+// DeviceCfg contains all hmc related device definitions
+type DeviceCfg struct {
+	//LogicalPartition
+	ID             string `xorm:"'id' unique" binding:"Required"` //lpar.PartitionUUID
+	Name           string `xorm:"name" binding:"Required"`        //lpar.PartitionName
+	SerialNumber   string `xorm:"serial_number"`                  //lpar.LogicalSerialNumber
+	OSVersion      string `xorm:"os_version"`                     //lpar.OperatingSystemVersion
+	Type           string `xorm:"type"`                           //lpar.PartitionType (LPAR/VIOServer
+	PartitionState string `xorm:"-"`                              //lpar.PartitionState
+
+	Location string `xorm:"location"`
+
+	EnableHMCStats  bool `xorm:"'enable_hmc_stats' default 1"`
+	EnableNmonStats bool `xorm:"'enable_nmon_stats' default 1"`
+
+	NmonFreq     int    `xorm:"'nmon_freq' default 60" binding:"Default(60);IntegerNotZero"`
+	NmonOutDB    string `xorm:"nmon_outdb"`
+	NmonIP       string `xorm:"nmon_ip"`
+	NmonSSHUser  string `xorm:"nmon_ssh_user"`
+	NmonSSHKey   string `xorm:"nmon_ssh_key"`
+	NmonLogLevel string `xorm:"nmon_loglevel" binding:"Default(info)"`
+
+	ExtraTags []string `xorm:"extra-tags"` //common tags for nmon and also for hmc stats
+
+	Description string `xorm:"description"`
+}
+
 // DBConfig read from DB
 type DBConfig struct {
 	Influxdb map[string]*InfluxCfg
 	HMC      map[string]*HMCCfg
+	Devices  map[string]*DeviceCfg
 }
 
 // Init initialices the DB
