@@ -3,6 +3,7 @@ package hmc
 import (
 	"fmt"
 	"github.com/adejoux/pSeriesCollector/pkg/data/hmcpcm"
+	"github.com/adejoux/pSeriesCollector/pkg/data/pointarray"
 	"github.com/adejoux/pSeriesCollector/pkg/data/utils"
 	"strconv"
 	"time"
@@ -11,7 +12,7 @@ import (
 const timeFormat = "2006-01-02T15:04:05-0700"
 
 // GenerateServerMeasurements generate measurements for HMC Managed servers
-func (d *HMCServer) GenerateServerMeasurements(pa *PointArray, Tags map[string]string, t time.Time, s hmcpcm.ServerData) {
+func (d *HMCServer) GenerateServerMeasurements(pa *pointarray.PointArray, Tags map[string]string, t time.Time, s hmcpcm.ServerData) {
 
 	fieldproc := map[string]interface{}{
 		"TotalProcUnits":        s.Processor.TotalProcUnits[0],
@@ -47,7 +48,7 @@ func (d *HMCServer) GenerateServerMeasurements(pa *PointArray, Tags map[string]s
 }
 
 // GenerateViosMeasurements generate measurementes for VIOS servers
-func (d *HMCServer) GenerateViosMeasurements(pa *PointArray, Tags map[string]string, t time.Time, v []hmcpcm.ViosData) {
+func (d *HMCServer) GenerateViosMeasurements(pa *pointarray.PointArray, Tags map[string]string, t time.Time, v []hmcpcm.ViosData) {
 
 	for _, vios := range v {
 		//Check if this vios exist in the device catalog and is enabled
@@ -179,7 +180,7 @@ func (d *HMCServer) GenerateViosMeasurements(pa *PointArray, Tags map[string]str
 }
 
 // GenerateLparMeasurements generate measurements for LPAR servers
-func (d *HMCServer) GenerateLparMeasurements(pa *PointArray, Tags map[string]string, t time.Time, l []hmcpcm.LparData) {
+func (d *HMCServer) GenerateLparMeasurements(pa *pointarray.PointArray, Tags map[string]string, t time.Time, l []hmcpcm.LparData) {
 
 	for _, lpar := range l {
 
@@ -309,7 +310,7 @@ func (d *HMCServer) ScanHMCDevices() error {
 }
 
 //ImportData is the entry point for subcommand hmc
-func (d *HMCServer) ImportData(points *PointArray) error {
+func (d *HMCServer) ImportData(points *pointarray.PointArray) error {
 
 	if d.System == nil {
 		return fmt.Errorf("Any Scanned SM/LPAR devices detected")

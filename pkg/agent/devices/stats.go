@@ -1,4 +1,4 @@
-package hmc
+package devices
 
 import (
 	"sync"

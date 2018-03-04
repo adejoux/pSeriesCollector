@@ -1,4 +1,4 @@
-package hmc
+package pointarray
 
 import (
 	"github.com/Sirupsen/logrus"
@@ -20,7 +20,7 @@ type PointArray struct {
 }
 
 // NewPointArray create a point array struct
-func NewPointArray(l *logrus.Logger, bpts *client.BatchPoints) *PointArray {
+func New(l *logrus.Logger, bpts *client.BatchPoints) *PointArray {
 	return &PointArray{0, 0, 0, 0, nil, l, bpts}
 }
 

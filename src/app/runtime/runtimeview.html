@@ -61,7 +61,7 @@
                         </div>
                     </div-->
                     <div class="panel panel-default col-md-12" style="padding-left: 0px; padding-right: 0px;">
-                        <div class="panel-heading"><span class="text-primary glyphicon glyphicon-dashboard" style="margin-top: 2px; margin-right: 10px"></span>Statistics HMC Device</div>
+                        <div class="panel-heading"><span class="text-primary glyphicon glyphicon-dashboard" style="margin-top: 2px; margin-right: 10px"></span>Statistics Device</div>
                         <div class="panel-body">
                             <table class="table-striped table-bordered" style="width: 100%">
                                 <tr>
@@ -150,41 +150,41 @@
                                         </div>
                                     </div>
                                 </li>
-                                <!--  Force HMC Scan Update -->
+                                <!--  Force Dev Scan Update -->
                                 <li class="list-group-item">
                                     <div class="row">
                                         <div class="col-md-8 text-left">
-                                            <span>Force HMC Scan Update</span>
+                                            <span>Force Dev Scan Update</span>
                                             <span class="glyphicon glyphicon-question-sign" tooltip="Force Filter update on next gathering cycle "></span>
                                             <span>Pending Cycles: {{ runtime_dev['Stats'].ReloadLoopsPending }} </span>
                                         </div>
                                         <div class="col-md-4 text-right">
-                                            <button type="button" (click)="forceHMCScan(runtime_dev.ID)" [ngClass]="'btn btn-primary'">Force Now</button>
+                                            <button type="button" (click)="forceDevScan(runtime_dev.ID)" [ngClass]="'btn btn-primary'">Force Now</button>
                                         </div>
                                     </div>
                                 </li>
-                                <!--  HMC HTTP API Protocol Debug -->
+                                <!--  Device Protocol Debug -->
                                 <li class="list-group-item">
                                     <div class="row">
                                         <div class="col-md-7 text-left">
-                                            <span>HMC HTTP API Debug</span>
-                                            <span class="glyphicon glyphicon-question-sign" tooltip="Enable or disable the HMC API Debug (only online not saved in the configuration database)"></span>
+                                            <span>Device Connection Protocol Debug</span>
+                                            <span class="glyphicon glyphicon-question-sign" tooltip="Enable or disable the Device Connection Protocol Debug (only online not saved in the configuration database)"></span>
                                         </div>
                                         <div class="col-md-5 text-right">
                                             <button type="button" (click)="runtime_dev.StateDebug ? changeStateDebug(runtime_dev.ID,false) : changeStateDebug(runtime_dev.ID,true)" [ngClass]="runtime_dev.StateDebug ? 'btn btn-danger' : 'btn btn-success'">{{runtime_dev.StateDebug ? 'Disable' : 'Enable'}}</button>
                                         </div>
                                     </div>
                                 </li>
-                                <!--  Force HMC Reset >
+                                <!--  Force Device Connection Reset >
                                 <li class="list-group-item">
                                     <div class="row">
                                         <div class="col-md-8 text-left">
-                                            <span>Force HMC Connection Reset </span>
-                                            <span class="glyphicon glyphicon-question-sign" tooltip="Force HMC conection Reset: soft for only recconnet current opened snmp connections and HARD to remap measurements , snmp protocol reconnect and remap filters also "></span>
+                                            <span>Force Device Connection Reset </span>
+                                            <span class="glyphicon glyphicon-question-sign" tooltip="Force Device conection Reset: soft for only recconnet current opened snmp connections and HARD to remap measurements , snmp protocol reconnect and remap filters also "></span>
                                         </div>
                                         <div class="col-md-4 text-right">
-                                            <button type="button" (click)="forceHMCReset(runtime_dev.ID,'soft')" [ngClass]="'btn btn-primary'">Soft Reset</button>
-                                            <button type="button" (click)="forceHMCReset(runtime_dev.ID,'hard')" [ngClass]="'btn btn-primary'">Hard Reset</button>
+                                            <button type="button" (click)="forceDevReset(runtime_dev.ID,'soft')" [ngClass]="'btn btn-primary'">Soft Reset</button>
+                                            <button type="button" (click)="forceDevReset(runtime_dev.ID,'hard')" [ngClass]="'btn btn-primary'">Hard Reset</button>
                                         </div>
                                     </div>
                                 </li>-->

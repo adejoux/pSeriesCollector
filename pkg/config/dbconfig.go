@@ -79,7 +79,8 @@ type DeviceCfg struct {
 	NmonIP       string `xorm:"nmon_ip"`
 	NmonSSHUser  string `xorm:"nmon_ssh_user"`
 	NmonSSHKey   string `xorm:"nmon_ssh_key"`
-	NmonLogLevel string `xorm:"nmon_loglevel" binding:"Default(info)"`
+	NmonLogLevel string `xorm:"'nmon_loglevel' default 'info'" binding:"Default(info)"`
+	NmonFilePath string `xorm:"'nmon_filepath' default '/var/log/nmon/%{hostname}_%Y%m%d_%H%M.nmon'" binding:"Default(/var/log/nmon/%{hostname}_%Y%m%d_%H%M.nmon)"`
 
 	ExtraTags []string `xorm:"extra-tags"` //common tags for nmon and also for hmc stats
 

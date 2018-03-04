@@ -7,6 +7,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/adejoux/pSeriesCollector/pkg/agent/bus"
+	"github.com/adejoux/pSeriesCollector/pkg/agent/devices"
 	"github.com/adejoux/pSeriesCollector/pkg/agent/devices/hmc"
 	"github.com/adejoux/pSeriesCollector/pkg/agent/output"
 	"github.com/adejoux/pSeriesCollector/pkg/agent/selfmon"
@@ -59,7 +60,7 @@ var (
 	reloadMutex   sync.Mutex
 	reloadProcess bool
 	//runtime hmc
-	hmcServers map[string]*hmc.HMCServer
+	dataDevices map[string]devices.Device
 	//runtime output db's
 	influxdb map[string]*output.InfluxDB
 
@@ -123,15 +124,15 @@ func PrepareInfluxDBs() map[string]*output.InfluxDB {
 }
 
 //GetDevice is a safe method to get a Device Object
-func GetDevice(id string) (*hmc.HMCServer, error) {
-	var dev *hmc.HMCServer
+func GetDevice(id string) (devices.Device, error) {
+	var dev devices.Device
 	var ok bool
 	if CheckReloadProcess() == true {
 		log.Warning("There is a reload process running while trying to get device info")
 		return nil, fmt.Errorf("There is a reload process running.... please wait until finished ")
 	}
 	mutex.RLock()
-	if dev, ok = hmcServers[id]; !ok {
+	if dev, ok = dataDevices[id]; !ok {
 		return nil, fmt.Errorf("there is not any device with id %s running", id)
 	}
 	mutex.RUnlock()
@@ -140,7 +141,7 @@ func GetDevice(id string) (*hmc.HMCServer, error) {
 
 //GetDeviceJSONInfo get device data in JSON format just if not doing a reloading process
 func GetDeviceJSONInfo(id string) ([]byte, error) {
-	var dev *hmc.HMCServer
+	var dev devices.Device
 	var ok bool
 	if CheckReloadProcess() == true {
 		log.Warning("There is a reload process running while trying to get device info")
@@ -148,17 +149,17 @@ func GetDeviceJSONInfo(id string) ([]byte, error) {
 	}
 	mutex.RLock()
 	defer mutex.RUnlock()
-	if dev, ok = hmcServers[id]; !ok {
+	if dev, ok = dataDevices[id]; !ok {
 		return nil, fmt.Errorf("there is not any device with id %s running", id)
 	}
 	return dev.ToJSON()
 }
 
 // GetDevStats xx
-func GetDevStats() map[string]*hmc.DevStat {
-	devstats := make(map[string]*hmc.DevStat)
+func GetDevStats() map[string]*devices.DevStat {
+	devstats := make(map[string]*devices.DevStat)
 	mutex.RLock()
-	for k, v := range hmcServers {
+	for k, v := range dataDevices {
 		devstats[k] = v.GetBasicStats()
 	}
 	mutex.RUnlock()
@@ -190,7 +191,7 @@ func DeviceProcessStop() {
 func DeviceProcessStart() {
 	mutex.RLock()
 
-	for s, c := range hmcServers {
+	for s, c := range dataDevices {
 		log.Infof("Starting HMC device %s", s)
 		c.StartGather(&gatherWg)
 	}
@@ -200,7 +201,7 @@ func DeviceProcessStart() {
 // ReleaseDevices Executes End for each device
 func ReleaseDevices() {
 	mutex.RLock()
-	for _, c := range hmcServers {
+	for _, c := range dataDevices {
 		c.End()
 	}
 	mutex.RUnlock()
@@ -253,13 +254,13 @@ func LoadConf() {
 
 	//Initialize Device Runtime map
 	mutex.Lock()
-	hmcServers = make(map[string]*hmc.HMCServer)
+	dataDevices = make(map[string]devices.Device)
 	mutex.Unlock()
 
 	for k, c := range DBConfig.HMC {
 		//Inticialize each HMC device and put pointer to the global map hmc
 		dev := hmc.New(c)
-		dev.AttachToBus(Bus)
+		dev.AttachToBus(c.ID, Bus)
 		dev.SetSelfMonitoring(selfmonProc)
 		//send db's map to initialize each one its own db if needed and not yet initialized
 
@@ -268,7 +269,7 @@ func LoadConf() {
 		outdb.StartSender(&senderWg)
 
 		mutex.Lock()
-		hmcServers[k] = dev
+		dataDevices[k] = dev
 		mutex.Unlock()
 	}
 

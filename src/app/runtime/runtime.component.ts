@@ -432,21 +432,21 @@ export class RuntimeComponent implements OnDestroy {
       );
   }
 
-  forceHMCScan(id) {
+  forceDevCScan(id) {
     console.log("ID,event", id, event);
-    this.runtimeService.forceHMCScan(id)
+    this.runtimeService.forceDevScan(id)
       .subscribe(
       data => {
-        console.log("HMC Scan update done")
+        console.log("Device Scan update done")
       },
       err => console.error(err),
       () => console.log('DONE')
       );
   }
 
-  forceHMCReset(id, mode) {
+  forceDevReset(id, mode) {
     console.log("ID,event", id, event);
-    this.runtimeService.forceHMCReset(id, mode)
+    this.runtimeService.forceDevReset(id, mode)
       .subscribe(
       data => {
         console.log("reset done")

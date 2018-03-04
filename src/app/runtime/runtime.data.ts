@@ -26,6 +26,6 @@ export const RuntimeComponentConfig: any =
     /*5*/    { show: true, id: "CycleGatherDuration", label: "Cycle Gather Duration", type: "duration", tooltip: "elapsed time taken to get all measurement info" },
     /*6*/    { show: false, id: "BackEndSentStartTime", label: "BackEnd (influxdb) Sent Start Time", type: "time", tooltip: "Last sent time" },
     /*7*/    { show: true, id: "BackEndSentDuration", label: "BackEnd (influxdb) Sent Duration", type: "duration", tooltip: "elapsed time taken to send data to the db backend" },
-    /*8*/    { show: false, id: "ScanStartTime", label: "HMC Device Scan Start Time", type: "time", tooltip: "Last scan time" },
-    /*9*/    { show: true, id: "ScanDuration", label: "HMC Device Scan Duration", type: "duration", tooltip: "elapsed time taken to scan HMC devices" },
+    /*8*/    { show: false, id: "ScanStartTime", label: "Device Scan Start Time", type: "time", tooltip: "Last scan time" },
+    /*9*/    { show: true, id: "ScanDuration", label: "Device Scan Duration", type: "duration", tooltip: "elapsed time taken to scan devices" },
    ];

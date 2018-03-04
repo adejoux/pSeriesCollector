@@ -20,11 +20,11 @@ func NewAPIRtDevice(m *macaron.Macaron) error {
 		m.Put("/status/deactivate/:id", reqSignedIn, RTDeactivateDev)
 		m.Put("/debug/activate/:id", reqSignedIn, RTActHMCAPIDebugDev)
 		m.Put("/debug/deactivate/:id", reqSignedIn, RTDeactHMCAPIDebugDev)
-		//m.Get("/snmpreset/:id/:mode", reqSignedIn, RTSnmpReset)
+		//m.Get("/reset/:id/:mode", reqSignedIn, RTSnmpReset)
 		m.Get("/forcegather/:id", reqSignedIn, RTForceGather)
 		m.Put("/log/setloglevel/:id/:level", reqSignedIn, RTSetLogLevelDev)
 		m.Get("/log/getdevicelog/:id", reqSignedIn, RTGetLogFileDev)
-		m.Get("/forcehmcscan/:id", reqSignedIn, RTForceHMCScan)
+		m.Get("/forcedevscan/:id", reqSignedIn, RTForceHMCScan)
 	})
 
 	return nil
@@ -43,7 +43,7 @@ func RTForceHMCScan(ctx *Context) {
 		return
 	}
 	log.Infof("trying to force filter for device %s", id)
-	d.ForceHMCScan()
+	d.ForceDevScan()
 	ctx.JSON(200, "OK")
 }
 
@@ -138,7 +138,7 @@ func RTActHMCAPIDebugDev(ctx *Context) {
 		return
 	}
 	log.Infof("activating snmpdebug  %s", id)
-	dev.RTActHMCAPIDebug(true)
+	dev.RTProtocolDebug(true)
 	ctx.JSON(200, "OK")
 }
 
@@ -151,7 +151,7 @@ func RTDeactHMCAPIDebugDev(ctx *Context) {
 		return
 	}
 	log.Infof("deactivating snmpdebug  %s", id)
-	dev.RTActHMCAPIDebug(false)
+	dev.RTProtocolDebug(false)
 	ctx.JSON(200, "OK")
 }
 
