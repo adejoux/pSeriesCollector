@@ -57,15 +57,6 @@
 			"Rev": "d52a762fba17a2ed265463c1c7b608c14836eaaf"
 		},
 		{
-			"ImportPath": "github.com/golang/protobuf/proto",
-			"Rev": "8ee79997227bf9b34611aee7946ae64735e6fd93"
-		},
-		{
-			"ImportPath": "github.com/google/uuid",
-			"Comment": "0.2-13-ge367a34",
-			"Rev": "e367a344cbe8e08149f9951115dc299ebd42b919"
-		},
-		{
 			"ImportPath": "github.com/hashicorp/hcl",
 			"Rev": "630949a3c5fa3c613328e1b8256052cbc2327c9b"
 		},
@@ -117,34 +108,8 @@
 			"Rev": "9aeae7ce82034004e3558bab8397f776498a983e"
 		},
 		{
-			"ImportPath": "github.com/influxdata/kapacitor/alert",
-			"Comment": "v1.3.3-74-geacb373",
-			"Rev": "eacb3730de19d7c70b6481f53100c20850d30b8b"
-		},
-		{
-			"ImportPath": "github.com/influxdata/kapacitor/expvar",
-			"Comment": "v1.3.3-74-geacb373",
-			"Rev": "eacb3730de19d7c70b6481f53100c20850d30b8b"
-		},
-		{
-			"ImportPath": "github.com/influxdata/kapacitor/models",
-			"Comment": "v1.3.3-74-geacb373",
-			"Rev": "eacb3730de19d7c70b6481f53100c20850d30b8b"
-		},
-		{
-			"ImportPath": "github.com/influxdata/kapacitor/server/vars",
-			"Comment": "v1.3.3-74-geacb373",
-			"Rev": "eacb3730de19d7c70b6481f53100c20850d30b8b"
-		},
-		{
-			"ImportPath": "github.com/influxdata/kapacitor/udf/agent",
-			"Comment": "v1.3.3-74-geacb373",
-			"Rev": "eacb3730de19d7c70b6481f53100c20850d30b8b"
-		},
-		{
-			"ImportPath": "github.com/influxdata/kapacitor/uuid",
-			"Comment": "v1.3.3-74-geacb373",
-			"Rev": "eacb3730de19d7c70b6481f53100c20850d30b8b"
+			"ImportPath": "github.com/kr/fs",
+			"Rev": "2788f0dbd16903de03cb8186e5c7d97b69ad387b"
 		},
 		{
 			"ImportPath": "github.com/magiconair/properties",
@@ -169,6 +134,16 @@
 			"ImportPath": "github.com/pelletier/go-toml",
 			"Comment": "v0.5.0-7-gfe206ef",
 			"Rev": "fe206efb84b2bc8e8cfafe6b4c1826622be969e3"
+		},
+		{
+			"ImportPath": "github.com/pkg/errors",
+			"Comment": "v0.8.0",
+			"Rev": "645ef00459ed84a119197bfb8d8205042c6df63d"
+		},
+		{
+			"ImportPath": "github.com/pkg/sftp",
+			"Comment": "1.0.0-1-g7c1f7a3",
+			"Rev": "7c1f7a370726a2457b33b29baefc2402b4965c65"
 		},
 		{
 			"ImportPath": "github.com/spf13/afero",
@@ -196,7 +171,35 @@
 			"Rev": "5d46e70da8c0b6f812e0b170b7a985753b5c63cb"
 		},
 		{
+			"ImportPath": "golang.org/x/crypto/curve25519",
+			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ed25519",
+			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ed25519/internal/edwards25519",
+			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/internal/chacha20",
+			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
+		},
+		{
 			"ImportPath": "golang.org/x/crypto/pbkdf2",
+			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/poly1305",
+			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh",
+			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh/agent",
 			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
 		},
 		{
@@ -228,16 +231,6 @@
 		{
 			"ImportPath": "gopkg.in/yaml.v2",
 			"Rev": "4c78c975fe7c825c6d1466c42be594d1d6f3aba6"
-		},
-		{
-			"ImportPath": "github.com/influxdata/kapacitor/vendor/github.com/google/uuid",
-			"Comment": "v1.3.3-74-geacb373",
-			"Rev": "eacb3730de19d7c70b6481f53100c20850d30b8b"
-		},
-		{
-			"ImportPath": "github.com/influxdata/kapacitor/vendor/github.com/golang/protobuf/proto",
-			"Comment": "v1.3.3-74-geacb373",
-			"Rev": "eacb3730de19d7c70b6481f53100c20850d30b8b"
 		}
 	]
 }
