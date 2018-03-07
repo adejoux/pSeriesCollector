@@ -16,7 +16,8 @@ export class DeviceCfgService {
           return parseInt(value);
         }
         if ( key == 'EnableHMCStats' ||
-        key == 'EnableNmonStats') return ( value === "true" || value === true);
+        key == 'EnableNmonStats' ||
+        key == 'NmonProtDebug') return ( value === "true" || value === true);
         if ( key == 'ExtraTags' ) {
             return  String(value).split(',');
         }

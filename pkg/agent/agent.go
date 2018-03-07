@@ -9,6 +9,7 @@ import (
 	"github.com/adejoux/pSeriesCollector/pkg/agent/bus"
 	"github.com/adejoux/pSeriesCollector/pkg/agent/devices"
 	"github.com/adejoux/pSeriesCollector/pkg/agent/devices/hmc"
+	"github.com/adejoux/pSeriesCollector/pkg/agent/devices/nmon"
 	"github.com/adejoux/pSeriesCollector/pkg/agent/output"
 	"github.com/adejoux/pSeriesCollector/pkg/agent/selfmon"
 	"github.com/adejoux/pSeriesCollector/pkg/config"
@@ -257,9 +258,30 @@ func LoadConf() {
 	dataDevices = make(map[string]devices.Device)
 	mutex.Unlock()
 
+	//Init HMC devices
 	for k, c := range DBConfig.HMC {
 		//Inticialize each HMC device and put pointer to the global map hmc
 		dev := hmc.New(c)
+		dev.AttachToBus(c.ID, Bus)
+		dev.SetSelfMonitoring(selfmonProc)
+		//send db's map to initialize each one its own db if needed and not yet initialized
+
+		outdb, _ := dev.GetOutSenderFromMap(influxdb)
+		outdb.Init()
+		outdb.StartSender(&senderWg)
+
+		mutex.Lock()
+		dataDevices[k] = dev
+		mutex.Unlock()
+	}
+	//Init Nmon Devices only if not manageds
+	for k, c := range DBConfig.Devices {
+		//Inticialize each device and put pointer to the global map
+		if c.Type == "Managed" || c.EnableNmonStats == false {
+			log.Infof("Skipping Device Creation ID:%s (Type:%s|enabled:%t)", c.Name, c.Type, c.EnableHMCStats)
+			continue
+		}
+		dev := nmon.New(c)
 		dev.AttachToBus(c.ID, Bus)
 		dev.SetSelfMonitoring(selfmonProc)
 		//send db's map to initialize each one its own db if needed and not yet initialized

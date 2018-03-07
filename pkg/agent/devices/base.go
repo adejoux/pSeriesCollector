@@ -20,6 +20,7 @@ type Base struct {
 	logPrefix   string
 	log         *logrus.Logger
 	CurLogLevel string
+	logpath     string
 	//TagMap
 	TagMap map[string]string
 	//Scan
@@ -66,6 +67,16 @@ func (b *Base) SetScanFreq(fr int) {
 }
 
 //-------------------------------
+// END Object Handler
+//-------------------------------
+
+// End The Opposite of Init() uninitialize all variables
+func (b *Base) End() {
+	b.Node.Close()
+	b.ReleaseClient()
+}
+
+//-------------------------------
 // Data Lock Handlers
 //-------------------------------
 
@@ -90,6 +101,7 @@ func (b *Base) GetLogger() *logrus.Logger {
 
 // InitLog set the log file
 func (b *Base) InitLog(LogFile string, LogLevel string) {
+	b.logpath = LogFile
 	b.logPrefix = "[" + b.Type + "] [" + b.ID + "]"
 	f, _ := os.OpenFile(LogFile, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	b.log = logrus.New()
@@ -102,6 +114,11 @@ func (b *Base) InitLog(LogFile string, LogLevel string) {
 	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
 	b.log.Formatter = customFormatter
 	customFormatter.FullTimestamp = true
+}
+
+// GetLogFilePath return current LogFile
+func (b *Base) GetLogFilePath() string {
+	return b.logpath
 }
 
 //-------------------------------

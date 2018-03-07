@@ -86,11 +86,6 @@ func New(c *config.HMCCfg) *HMCServer {
 	return &dev
 }
 
-// GetLogFilePath return current LogFile
-func (d *HMCServer) GetLogFilePath() string {
-	return d.cfg.LogFile
-}
-
 // ToJSON return a JSON version of the device data
 func (d *HMCServer) ToJSON() ([]byte, error) {
 	d.DataLock()
@@ -255,12 +250,6 @@ func (d *HMCServer) Init(c *config.HMCCfg) error {
 	d.SetScanFreq(d.cfg.UpdateScanFreq)
 
 	return nil
-}
-
-// End The Opposite of Init() uninitialize all variables
-func (d *HMCServer) End() {
-	d.Node.Close()
-	d.Session.Release()
 }
 
 // ReleaseClient release connections

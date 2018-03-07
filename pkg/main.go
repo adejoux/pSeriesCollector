@@ -16,6 +16,7 @@ import (
 	"github.com/adejoux/pSeriesCollector/pkg/agent"
 	"github.com/adejoux/pSeriesCollector/pkg/agent/bus"
 	"github.com/adejoux/pSeriesCollector/pkg/agent/devices/hmc"
+	"github.com/adejoux/pSeriesCollector/pkg/agent/devices/nmon"
 	"github.com/adejoux/pSeriesCollector/pkg/agent/output"
 	"github.com/adejoux/pSeriesCollector/pkg/agent/selfmon"
 	"github.com/adejoux/pSeriesCollector/pkg/config"
@@ -153,6 +154,9 @@ func init() {
 
 	hmc.SetDBConfig(&agent.DBConfig, &agent.MainConfig.Database)
 	hmc.SetLogDir(logDir)
+
+	nmon.SetDBConfig(&agent.DBConfig, &agent.MainConfig.Database)
+	nmon.SetLogDir(logDir)
 
 	webui.SetLogger(log)
 	webui.SetLogDir(logDir)

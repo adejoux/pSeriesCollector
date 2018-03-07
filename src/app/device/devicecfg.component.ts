@@ -99,6 +99,8 @@ export class DeviceCfgComponent {
       NmonSSHUser: [this.deviceForm ? this.deviceForm.value.NmonSSHUser : ''],
       NmonSSHKey: [this.deviceForm ? this.deviceForm.value.NmonSSHKey : ''],
       NmonLogLevel: [this.deviceForm ? this.deviceForm.value.NmonLogLevel : 'info'],
+      NmonFilePath: [this.deviceForm ? this.deviceForm.value.NmonFilePath : '/var/log/nmon/%{hostname}_%Y%m%d_%H%M.nmon'],
+      NmonProtDebug: [this.deviceForm ? this.deviceForm.value.NmonProtDebug : 'false'],
       ExtraTags: [this.deviceForm ? (this.deviceForm.value.ExtraTags ? this.deviceForm.value.ExtraTags : "" ) : "" , Validators.compose([ValidationService.noWhiteSpaces, ValidationService.extraTags])],
       Description: [this.deviceForm ? this.deviceForm.value.Description : '']
     });

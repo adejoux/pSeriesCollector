@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -120,4 +121,26 @@ func MapAdd(dest map[string]string, orig map[string]string) {
 	for k, v := range orig {
 		dest[k] = v
 	}
+}
+
+// StrArrayAppendIfMissing create a new array with data appended if not exist
+func StrArrayAppendIfMissing(slice []string, i string) []string {
+	for _, ele := range slice {
+		if ele == i {
+			return slice
+		}
+	}
+	return append(slice, i)
+}
+
+// Grep return includes and not included array
+func Grep(lines []string, reg *regexp.Regexp) (inc []string, notinc []string) {
+	for _, l := range lines {
+		if reg.MatchString(l) {
+			inc = append(inc, l)
+		} else {
+			notinc = append(notinc, l)
+		}
+	}
+	return
 }
