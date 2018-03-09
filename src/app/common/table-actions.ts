@@ -43,10 +43,15 @@ import { FormsModule, NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/f
         <select *ngIf="selectorSelected.type === 'boolean'" class="select-pages" style="width:auto" [(ngModel)]="propertySelected">
           <option *ngFor="let option of selectorSelected.options" [ngValue]="option" (ngModelChange)="changeProperty($event)">{{option}}</option>
         </select>
-        <ss-multiselect-dropdown *ngIf="selectorSelected.type === 'multiselector'" [options]="selectorSelected.options" [texts]="myTexts" [settings]="mySettingsInflux" [(ngModel)]="propertySelected"></ss-multiselect-dropdown>
-        <div [formGroup]="selectorSelected.options" *ngIf="selectorSelected.type === 'input'" style="border:none; display:inline">
+        <ss-multiselect-dropdown *ngIf="selectorSelected.type === 'multiselector'" [options]="selectorSelected.options" [(ngModel)]="propertySelected"></ss-multiselect-dropdown>
+        <ss-multiselect-dropdown *ngIf="selectorSelected.type === 'single-multiselector'" [options]="selectorSelected.options" [settings]="{'singleSelect': true}" [(ngModel)]="propertySelected"></ss-multiselect-dropdown>        <div [formGroup]="selectorSelected.options" *ngIf="selectorSelected.type === 'input'" style="border:none; display:inline">
               <input formControlName="formControl" id="formControl" [(ngModel)]="propertySelected" style="width:auto"/>
               <control-messages style="display:block; margin-top:5px" [control]="selectorSelected.options.controls.formControl" ></control-messages>
+        </div>
+        <div [formGroup]="selectorSelected.options" *ngIf="selectorSelected.type === 'input-password'" style="border:none; display:inline">
+        <input #inputPassword formControlName="formControl" id="formControl" [(ngModel)]="propertySelected" type="password" style="width:auto"/>
+        <i style="margin-left:-25px; margin-right:6px" [ngClass]="inputPassword.type === 'password' ? ['glyphicon glyphicon-eye-open text-primary'] : ['glyphicon glyphicon-eye-close text-primary']" passwordToggle [input]="inputPassword"> </i>
+        <control-messages style="display:block; margin-top:5px" [control]="selectorSelected.options.controls.formControl" ></control-messages>
         </div>
       </div>
       <div class="col-md-1" *ngIf="propertySelected">
