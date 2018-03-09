@@ -4,34 +4,49 @@ import "fmt"
 
 /***************************
 	Influx DB backends
-	-GetDeviceCfgCfgByID(struct)
-	-GetDeviceCfgMap (map - for interna config use
-	-GetDeviceCfgArray(Array - for web ui use )
-	-AddDeviceCfg
-	-DelDeviceCfg
-	-UpdateDeviceCfg
-  -GetDeviceCfgAffectOnDel
+	-GetNmonFileInfoCfgByID(struct)
+	-GetNmonFileInfoMap (map - for interna config use
+	-GetNmonFileInfoArray(Array - for web ui use )
+	-AddNmonFileInfo
+	-DelNmonFileInfo
+	-UpdateNmonFileInfo
+  -GetNmonFileInfoAffectOnDel
 ***********************************/
 
-/*GetDeviceCfgByID get device data by id*/
-func (dbc *DatabaseCfg) GetDeviceCfgByID(id string) (DeviceCfg, error) {
-	cfgarray, err := dbc.GetDeviceCfgArray("id='" + id + "'")
+/*GetNmonFileInfoByIDFile get device data by id*/
+func (dbc *DatabaseCfg) GetNmonFileInfoByIDFile(id string, filename string) (NmonFileInfo, error) {
+	cfgarray, err := dbc.GetNmonFileInfoArray("id='" + id + "' and file_name='" + filename + "'")
 	if err != nil {
-		return DeviceCfg{}, err
+		return NmonFileInfo{}, err
 	}
 	if len(cfgarray) > 1 {
-		return DeviceCfg{}, fmt.Errorf("Error %d results on get DeviceCfg by id %s", len(cfgarray), id)
+		return NmonFileInfo{}, fmt.Errorf("Error %d results on get NmonFileInfo by id %s", len(cfgarray), id)
 	}
 	if len(cfgarray) == 0 {
-		return DeviceCfg{}, fmt.Errorf("Error no values have been returned with this id %s in the influx config table", id)
+		return NmonFileInfo{}, fmt.Errorf("Error no values have been returned with this id %s in the influx config table", id)
 	}
 	return *cfgarray[0], nil
 }
 
-/*GetDeviceCfgMap  return data in map format*/
-func (dbc *DatabaseCfg) GetDeviceCfgMap(filter string) (map[string]*DeviceCfg, error) {
-	cfgarray, err := dbc.GetDeviceCfgArray(filter)
-	cfgmap := make(map[string]*DeviceCfg)
+/*GetNmonFileInfoByID get device data by id*/
+func (dbc *DatabaseCfg) GetNmonFileInfoByID(id string) (NmonFileInfo, error) {
+	cfgarray, err := dbc.GetNmonFileInfoArray("id='" + id + "'")
+	if err != nil {
+		return NmonFileInfo{}, err
+	}
+	if len(cfgarray) > 1 {
+		return NmonFileInfo{}, fmt.Errorf("Error %d results on get NmonFileInfo by id %s", len(cfgarray), id)
+	}
+	if len(cfgarray) == 0 {
+		return NmonFileInfo{}, fmt.Errorf("Error no values have been returned with this id %s in the influx config table", id)
+	}
+	return *cfgarray[0], nil
+}
+
+/*GetNmonFileInfoMap  return data in map format*/
+func (dbc *DatabaseCfg) GetNmonFileInfoMap(filter string) (map[string]*NmonFileInfo, error) {
+	cfgarray, err := dbc.GetNmonFileInfoArray(filter)
+	cfgmap := make(map[string]*NmonFileInfo)
 	for _, val := range cfgarray {
 		cfgmap[val.ID] = val
 		log.Debugf("%+v", *val)
@@ -39,14 +54,14 @@ func (dbc *DatabaseCfg) GetDeviceCfgMap(filter string) (map[string]*DeviceCfg, e
 	return cfgmap, err
 }
 
-/*GetDeviceCfgArray generate an array of devices with all its information */
-func (dbc *DatabaseCfg) GetDeviceCfgArray(filter string) ([]*DeviceCfg, error) {
+/*GetNmonFileInfoArray generate an array of devices with all its information */
+func (dbc *DatabaseCfg) GetNmonFileInfoArray(filter string) ([]*NmonFileInfo, error) {
 	var err error
-	var devices []*DeviceCfg
+	var devices []*NmonFileInfo
 	//Get Only data for selected devices
 	if len(filter) > 0 {
 		if err = dbc.x.Where(filter).Find(&devices); err != nil {
-			log.Warnf("Fail to get DeviceCfg  data filteter with %s : %v\n", filter, err)
+			log.Warnf("Fail to get NmonFileInfo  data filteter with %s : %v\n", filter, err)
 			return nil, err
 		}
 	} else {
@@ -58,8 +73,8 @@ func (dbc *DatabaseCfg) GetDeviceCfgArray(filter string) ([]*DeviceCfg, error) {
 	return devices, nil
 }
 
-/*AddDeviceCfg for adding new devices*/
-func (dbc *DatabaseCfg) AddDeviceCfg(dev DeviceCfg) (int64, error) {
+/*AddNmonFileInfo for adding new devices*/
+func (dbc *DatabaseCfg) AddNmonFileInfo(dev NmonFileInfo) (int64, error) {
 	var err error
 	var affected int64
 	session := dbc.x.NewSession()
@@ -80,8 +95,8 @@ func (dbc *DatabaseCfg) AddDeviceCfg(dev DeviceCfg) (int64, error) {
 	return affected, nil
 }
 
-/*DelDeviceCfg for deleting influx databases from ID*/
-func (dbc *DatabaseCfg) DelDeviceCfg(id string) (int64, error) {
+/*DelNmonFileInfo for deleting influx databases from ID*/
+func (dbc *DatabaseCfg) DelNmonFileInfo(id string) (int64, error) {
 	var affecteddev, affected int64
 	var err error
 
@@ -95,7 +110,7 @@ func (dbc *DatabaseCfg) DelDeviceCfg(id string) (int64, error) {
 		return 0, fmt.Errorf("Error on Delete Device with id on delete HMCCfg with id: %s, error: %s", id, err)
 	}
 
-	affected, err = session.Where("id='" + id + "'").Delete(&DeviceCfg{})
+	affected, err = session.Where("id='" + id + "'").Delete(&NmonFileInfo{})
 	if err != nil {
 		session.Rollback()
 		return 0, err
@@ -110,21 +125,21 @@ func (dbc *DatabaseCfg) DelDeviceCfg(id string) (int64, error) {
 	return affected, nil
 }
 
-// AddOrUpdateDeviceCfg this method insert data if not previouosly exist the tuple ifxServer.Name or update it if already exist
-func (dbc *DatabaseCfg) AddOrUpdateDeviceCfg(dev *DeviceCfg) (int64, error) {
+// AddOrUpdateNmonFileInfo this method insert data if not previouosly exist the tuple ifxServer.Name or update it if already exist
+func (dbc *DatabaseCfg) AddOrUpdateNmonFileInfo(dev *NmonFileInfo) (int64, error) {
 	log.Debugf("ADD OR UPDATE %+v", dev)
 	//check if exist
-	m, err := dbc.GetDeviceCfgArray("id == '" + dev.ID + "'")
+	m, err := dbc.GetNmonFileInfoArray("id == '" + dev.ID + "'")
 	if err != nil {
 		return 0, err
 	}
 	switch len(m) {
 	case 1:
 		log.Debugf("Updating Device %+v", m)
-		return dbc.UpdateDeviceCfg(m[0].ID, *dev)
+		return dbc.UpdateNmonFileInfo(m[0].ID, *dev)
 	case 0:
 		log.Debugf("Adding new Device %+v", dev)
-		return dbc.AddDeviceCfg(*dev)
+		return dbc.AddNmonFileInfo(*dev)
 	default:
 		log.Errorf("There is some error when searching for db %+v , found %d", dev, len(m))
 		return 0, fmt.Errorf("There is some error when searching for db %+v , found %d", dev, len(m))
@@ -132,8 +147,8 @@ func (dbc *DatabaseCfg) AddOrUpdateDeviceCfg(dev *DeviceCfg) (int64, error) {
 
 }
 
-/*UpdateDeviceCfg for adding new influxdb*/
-func (dbc *DatabaseCfg) UpdateDeviceCfg(id string, dev DeviceCfg) (int64, error) {
+/*UpdateNmonFileInfo for adding new influxdb*/
+func (dbc *DatabaseCfg) UpdateNmonFileInfo(id string, dev NmonFileInfo) (int64, error) {
 	var affecteddev, affected int64
 	var err error
 	session := dbc.x.NewSession()
@@ -162,8 +177,8 @@ func (dbc *DatabaseCfg) UpdateDeviceCfg(id string, dev DeviceCfg) (int64, error)
 	return affected, nil
 }
 
-/*GetDeviceCfgAffectOnDel for deleting devices from ID*/
-func (dbc *DatabaseCfg) GetDeviceCfgAffectOnDel(id string) ([]*DbObjAction, error) {
+/*GetNmonFileInfoAffectOnDel for deleting devices from ID*/
+func (dbc *DatabaseCfg) GetNmonFileInfoAffectOnDel(id string) ([]*DbObjAction, error) {
 	var devices []*HMCCfg
 	var obj []*DbObjAction
 	if err := dbc.x.Where("outdb='" + id + "'").Find(&devices); err != nil {

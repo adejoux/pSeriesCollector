@@ -38,7 +38,7 @@ func Ping(c *config.DeviceCfg, log *logrus.Logger, apidbg bool, filename string)
 		return nil, elapsed, "test", err
 	}
 
-	return sftp, elapsed, "test", nil
+	return sftp, elapsed, "SFTP test", nil
 }
 
 //ScanNmonDevice scan Device

@@ -1,17 +1,18 @@
 package nmon
 
 import (
-	"github.com/Sirupsen/logrus"
-
-	"github.com/adejoux/pSeriesCollector/pkg/data/rfile"
-
-	"github.com/pkg/sftp"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/pkg/sftp"
+
 	"github.com/adejoux/pSeriesCollector/pkg/data/pointarray"
+	"github.com/adejoux/pSeriesCollector/pkg/data/rfile"
+	"github.com/adejoux/pSeriesCollector/pkg/data/utils"
 )
 
 var hostRegexp = regexp.MustCompile(`^AAA.host.(\S+)`)
@@ -23,9 +24,6 @@ var headerRegexp = regexp.MustCompile(`^AAA|^BBB|^UARG|\WT\d{4,16}`)
 var infoRegexp = regexp.MustCompile(`^AAA.(.*)`)
 
 var skipRegexp = regexp.MustCompile(`T0+\W|^Z|^TOP.%CPU`)
-
-var nfsRegexp = regexp.MustCompile(`^NFS`)
-var nameRegexp = regexp.MustCompile(`(\d+)$`)
 
 var delimiterRegexp = regexp.MustCompile(`^\w+(.)`)
 
@@ -50,6 +48,7 @@ type NmonFile struct {
 	HostName     string
 	PendingLines []string
 	tzLocation   *time.Location
+	LastTime     time.Time
 }
 
 // NewNmonFile create a NmonFile
@@ -72,29 +71,40 @@ func (nf *NmonFile) filePathCheck() bool {
 	pattern = strings.Replace(pattern, "%{hostname}", strings.ToLower(nf.HostName), -1)
 	pattern = strings.Replace(pattern, "%{HOSTNAME}", strings.ToUpper(nf.HostName), -1)
 	pattern = strings.Replace(pattern, "%Y", strconv.Itoa(year), -1)
-	pattern = strings.Replace(pattern, "%m", strconv.Itoa(int(month)), -1)
-	pattern = strings.Replace(pattern, "%d", strconv.Itoa(day), -1)
-	pattern = strings.Replace(pattern, "%H", strconv.Itoa(hour), 1)
-	pattern = strings.Replace(pattern, "%M", strconv.Itoa(min), -1)
-	pattern = strings.Replace(pattern, "%S", strconv.Itoa(sec), -1)
+	pattern = strings.Replace(pattern, "%m", fmt.Sprintf("%02d", int(month)), -1)
+	pattern = strings.Replace(pattern, "%d", fmt.Sprintf("%02d", day), -1)
+	pattern = strings.Replace(pattern, "%H", fmt.Sprintf("%02d", hour), 1)
+	pattern = strings.Replace(pattern, "%M", fmt.Sprintf("%02d", min), -1)
+	pattern = strings.Replace(pattern, "%S", fmt.Sprintf("%02d", sec), -1)
 	if nf.CurFile != pattern {
-		nf.log.Debugf("Detected Nmon File change OLD [%s] NEW [%s]", nf.CurFile, pattern)
+		nf.log.Infof("Detected Nmon File change OLD [%s] NEW [%s]", nf.CurFile, pattern)
 		nf.CurFile = pattern
 		return true
 	}
 	return false
 }
 
-// CheckFile check if file has changed and reopen again if needed
-func (nf *NmonFile) CheckFile() {
+// SetPosition  set remote file at newPos Posistion
+func (nf *NmonFile) SetPosition(newpos int64) error {
+	realpos, err := nf.File.SetPosition(newpos)
+	if err != nil {
+		nf.log.Debug("Error on set File %s on  expected %d / real %d: error :%s", nf.CurFile, newpos, realpos, err)
+		return err
+	}
+	return nil
+}
+
+// ReopenIfChanged check if file has changed and reopen again if needed
+func (nf *NmonFile) ReopenIfChanged() bool {
 	if nf.filePathCheck() {
 		//file should be changed (maybe a rotation? or recreation?)
 		//close remote connection
 		nf.File.End()
 		//recreate a new connection
 		nf.File = rfile.New(nf.sftpConn, nf.log, nf.CurFile)
-		//initializing file
+		return true
 	}
+	return false
 }
 
 // AddNmonSection add new Section
@@ -103,7 +113,7 @@ func (nf *NmonFile) AddNmonSection(line string) {
 		return
 	}
 	if headerRegexp.MatchString(line) {
-		nf.log.Debug("This is not a valid Header Line [%d]")
+		nf.log.Debugf("This is line has not a valid Section : Line [%s]", line)
 		return
 	}
 
@@ -116,7 +126,7 @@ func (nf *NmonFile) AddNmonSection(line string) {
 
 	elems := strings.Split(line, nf.Delimiter)
 	if len(elems) < 3 {
-		nf.log.Errorf("ERROR: parsing the following line : %s\n", line)
+		nf.log.Errorf("ERROR: parsing the following line , not enougth columns (min 3) : %s\n", line)
 		return
 	}
 	name := elems[0]
@@ -130,15 +140,25 @@ func (nf *NmonFile) AddNmonSection(line string) {
 	nf.DataSeries[name] = dataserie
 }
 
-// Init Initialize NmonFile struct
-func (nf *NmonFile) Init() {
-	nf.SetLocation("") //pending set location from system
-	nf.filePathCheck()
-	nf.File = rfile.New(nf.sftpConn, nf.log, nf.CurFile)
+//PENDING : should we do a more acurated sanitize for field names ???
+// "Wait% " => "Wait_percent" ??
+// "free(MB)" => "free_mb" ??
+// "eth0-read-KB/s" => eth0_read_kb_s ??
+// "read/s" => "read_s" ??
+
+func sanitize(in string) string {
+	// "User  " => "User"  ??
+	return strings.TrimSpace(in)
+}
+
+func (nf *NmonFile) InitSectionDefs() (int64, error) {
 	//Map init
 	nf.DataSeries = make(map[string]DataSerie)
 	// Get Content
-	data := nf.File.Content()
+	data, pos, err := nf.File.ContentUntilMatch(timeRegexp)
+	if err != nil {
+		return 0, err
+	}
 	nf.log.Infof("Initialice NMONFILE: %s", nf.FilePattern)
 
 	first := true
@@ -208,12 +228,22 @@ func (nf *NmonFile) Init() {
 
 	nf.PendingLines = append(nf.PendingLines, data[last:]...)
 
-	nf.log.Debugf("End of NMONFile %s Initialization,  pending lines %d", nf.FilePattern, len(nf.PendingLines))
+	return pos, nil
+}
+
+// Init Initialize NmonFile struct return current position after initialized
+func (nf *NmonFile) Init() (int64, error) {
+	nf.SetTimeZoneLocation("") //pending set location from system
+	nf.filePathCheck()
+	nf.File = rfile.New(nf.sftpConn, nf.log, nf.CurFile)
+	pos, err := nf.InitSectionDefs()
+	nf.log.Debugf("End of NMONFile %s Initialization,  pending lines on buffer: [%d] Current file position: [%d]", nf.FilePattern, len(nf.PendingLines), pos)
+	return pos, err
 }
 
 // UpdateContent from remoteFile
-func (nf *NmonFile) UpdateContent() {
-	morelines := nf.File.Content()
+func (nf *NmonFile) UpdateContent() int64 {
+	morelines, pos := nf.File.Content()
 	nf.log.Infof("Got new %d lines from NmonFile ", len(morelines))
 	// replace data if needed depending on the delimiter
 	if nf.Delimiter == ";" {
@@ -223,12 +253,13 @@ func (nf *NmonFile) UpdateContent() {
 		}
 	}
 	nf.PendingLines = append(nf.PendingLines, morelines...)
+	return pos
 }
 
 const timeformat = "15:04:05 02-Jan-2006"
 
-//SetLocation set the timezone used to input metrics in InfluxDB
-func (nf *NmonFile) SetLocation(tz string) (err error) {
+//SetTimeZoneLocation set the timezone used to input metrics in InfluxDB
+func (nf *NmonFile) SetTimeZoneLocation(tz string) (err error) {
 	var loc *time.Location
 	if len(tz) > 0 {
 		loc, err = time.LoadLocation(tz)
@@ -304,6 +335,7 @@ func (nf *NmonFile) ProcessPending(points *pointarray.PointArray, tags map[strin
 			continue
 		}
 		nf.ProcessChunk(points, tags, t, tsID, nmonChunk)
+		nf.LastTime = t
 	}
 
 }
@@ -312,156 +344,156 @@ func (nf *NmonFile) ProcessPending(points *pointarray.PointArray, tags map[strin
 func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]string, t time.Time, timeID string, lines []string) {
 	nf.log.Infof("Decoding Chunk for Timestamp %s  with %d Elements ", t.String(), len(lines))
 
+	regstr := ""
 	for _, line := range lines {
 		//check if exit header to process data
 		header := strings.Split(line, nf.Delimiter)[0]
 		if _, ok := nf.DataSeries[header]; !ok {
-			nf.log.Infof("Line  not in Header [%s] tring to add...", line)
+			nf.log.Infof("Line  not in Header [%s] trying to add...", line)
 			// if not perhaps is a new header
 			nf.AddNmonSection(line)
-			continue
-		}
-		//PENDING a way to skip metrics
-		if skipRegexp.MatchString(line) {
-			continue
-		}
-		// CPU Stats
-		if cpuallRegexp.MatchString(line) {
-			matched := genStatsRegexp.FindStringSubmatch(line)
-			if matched[1] != timeID {
-				nf.log.Warning("Line not in time  TIMEID [%s] : Line :[%s]", timeID, line)
-				continue
+			if len(regstr) > 0 {
+				regstr = regstr + "|^" + header
+			} else {
+				regstr = "^" + header
 			}
-			nf.processCPUStats(pa, Tags, t, []string{line})
+
 			continue
+		}
+	}
+	if len(regstr) > 0 {
+		//there is a new
+		nf.log.Infof("Found not allowed sections REGEX = [%s]", regstr)
+		contains, notcontains := utils.Grep(lines, regexp.MustCompile(regstr))
+		lines = notcontains
+		nf.log.Debugf("CONTAINS:%+v", contains)
+		nf.log.Debugf("NOTCONTAINS: %+v", notcontains)
+	}
+
+	remain := lines
+	var linesok []string
+	var linesnotok []string
+
+	for {
+		if len(remain) == 0 {
+			//exit from the loop if any other line pending to  process.
+			break
+		}
+		//Filter All HardCoded
+		_, remain = utils.Grep(remain, skipRegexp)
+		//Filter Not In Time data
+		remain, linesnotok = utils.Grep(remain, regexp.MustCompile(`\W`+timeID))
+		if len(linesnotok) > 0 {
+			nf.log.Warning("Lines not in time  TIMEID [%s] : Lines :[%+v]", timeID, linesnotok)
+		}
+		//-----------------------------------------------------------------------------
+		// We will only process , format and send measurements from known Nmon Seccions
+		//-----------------------------------------------------------------------------
+
+		//CPU
+		linesok, remain = utils.Grep(remain, cpuRegexp)
+		if len(linesok) > 0 {
+			nf.processCPUStats(pa, Tags, t, linesok)
+		}
+		if len(remain) == 0 {
+			break
 		}
 		// MEM Stats
-		if memRegexp.MatchString(line) {
-			matched := genStatsRegexp.FindStringSubmatch(line)
-			if matched[1] != timeID {
-				nf.log.Warning("Line not in time  TIMEID [%s] : Line :[%s]", timeID, line)
-				continue
-			}
-			nf.processMEMStats(pa, Tags, t, []string{line})
-			continue
+		linesok, remain = utils.Grep(remain, memRegexp)
+		if len(linesok) > 0 {
+			nf.processMEMStats(pa, Tags, t, linesok)
+		}
+		if len(remain) == 0 {
+			break
 		}
 		// PAGING Stats
-		if pagingRegexp.MatchString(line) {
-			matched := genStatsRegexp.FindStringSubmatch(line)
-			if matched[1] != timeID {
-				nf.log.Warning("Line not in time  TIMEID [%s] : Line :[%s]", timeID, line)
-				continue
-			}
-			nf.processColumnAsTags(pa, Tags, t, []string{line}, "paging", "psname", pagingRegexp)
-			continue
+		linesok, remain = utils.Grep(remain, pagingRegexp)
+		if len(linesok) > 0 {
+			nf.processColumnAsTags(pa, Tags, t, linesok, "paging", "psname", pagingRegexp)
+		}
+		if len(remain) == 0 {
+			break
 		}
 		// DISK Stats
-		if diskRegexp.MatchString(line) {
-			matched := genStatsRegexp.FindStringSubmatch(line)
-			if matched[1] != timeID {
-				nf.log.Warning("Line not in time  TIMEID [%s] : Line :[%s]", timeID, line)
-				continue
-			}
-			nf.processColumnAsTags(pa, Tags, t, []string{line}, "disks", "diskname", diskRegexp)
-			continue
+		linesok, remain = utils.Grep(remain, diskRegexp)
+		if len(linesok) > 0 {
+			nf.processColumnAsTags(pa, Tags, t, linesok, "disks", "diskname", diskRegexp)
+		}
+		if len(remain) == 0 {
+			break
 		}
 		// VG Stats
-		if vgRegexp.MatchString(line) {
-			matched := genStatsRegexp.FindStringSubmatch(line)
-			if matched[1] != timeID {
-				nf.log.Warning("Line not in time  TIMEID [%s] : Line :[%s]", timeID, line)
-				continue
-			}
-			nf.processColumnAsTags(pa, Tags, t, []string{line}, "volumegroup", "vgname", vgRegexp)
-			continue
+		linesok, remain = utils.Grep(remain, vgRegexp)
+		if len(linesok) > 0 {
+			nf.processColumnAsTags(pa, Tags, t, linesok, "volumegroup", "vgname", vgRegexp)
+		}
+		if len(remain) == 0 {
+			break
 		}
 		// JFS Stats
-		if jfsRegexp.MatchString(line) {
-			matched := genStatsRegexp.FindStringSubmatch(line)
-			if matched[1] != timeID {
-				nf.log.Warning("Line not in time  TIMEID [%s] : Line :[%s]", timeID, line)
-				continue
-			}
-			nf.processColumnAsTags(pa, Tags, t, []string{line}, "jfs", "fsname", jfsRegexp)
-			continue
+		linesok, remain = utils.Grep(remain, jfsRegexp)
+		if len(linesok) > 0 {
+			nf.processColumnAsTags(pa, Tags, t, linesok, "jfs", "fsname", jfsRegexp)
+		}
+		if len(remain) == 0 {
+			break
 		}
 		// FC Stats
-		if fcRegexp.MatchString(line) {
-			matched := genStatsRegexp.FindStringSubmatch(line)
-			if matched[1] != timeID {
-				nf.log.Warning("Line not in time  TIMEID [%s] : Line :[%s]", timeID, line)
-				continue
-			}
-			nf.processColumnAsTags(pa, Tags, t, []string{line}, "fiberchannel", "fcname", fcRegexp)
-			continue
+		linesok, remain = utils.Grep(remain, fcRegexp)
+		if len(linesok) > 0 {
+			nf.processColumnAsTags(pa, Tags, t, linesok, "fiberchannel", "fcname", fcRegexp)
+		}
+		if len(remain) == 0 {
+			break
 		}
 		// DG Stats
-		if dgRegexp.MatchString(line) {
-			matched := genStatsRegexp.FindStringSubmatch(line)
-			if matched[1] != timeID {
-				nf.log.Warning("Line not in time  TIMEID [%s] : Line :[%s]", timeID, line)
-				continue
-			}
-			nf.processColumnAsTags(pa, Tags, t, []string{line}, "diskgroup", "dgname", dgRegexp)
-			continue
+		linesok, remain = utils.Grep(remain, dgRegexp)
+		if len(linesok) > 0 {
+			nf.processColumnAsTags(pa, Tags, t, linesok, "diskgroup", "dgname", dgRegexp)
 		}
-
+		if len(remain) == 0 {
+			break
+		}
 		//NET stats
-		if netRegexp.MatchString(line) {
-			matched := genStatsRegexp.FindStringSubmatch(line)
-			if matched[1] != timeID {
-				nf.log.Warning("Line not in time  TIMEID [%s] : Line :[%s]", timeID, line)
-				continue
-			}
-			nf.processMixedColumnAsFieldAndTags(pa, Tags, t, []string{line}, "network", "ifname")
-			continue
+		linesok, remain = utils.Grep(remain, netRegexp)
+		if len(linesok) > 0 {
+			nf.processMixedColumnAsFieldAndTags(pa, Tags, t, linesok, "network", "ifname")
 		}
-
+		if len(remain) == 0 {
+			break
+		}
 		//SEA stats
-		if seaRegexp.MatchString(line) {
-			matched := genStatsRegexp.FindStringSubmatch(line)
-			if matched[1] != timeID {
-				nf.log.Warning("Line not in time  TIMEID [%s] : Line :[%s]", timeID, line)
-				continue
-			}
-			nf.processMixedColumnAsFieldAndTags(pa, Tags, t, []string{line}, "sea", "seaname")
-			continue
+		linesok, remain = utils.Grep(remain, seaRegexp)
+		if len(linesok) > 0 {
+			nf.processMixedColumnAsFieldAndTags(pa, Tags, t, linesok, "sea", "seaname")
 		}
-
+		if len(remain) == 0 {
+			break
+		}
 		//IOADAPT stats
-		if ioadaptRegexp.MatchString(line) {
-			matched := genStatsRegexp.FindStringSubmatch(line)
-			if matched[1] != timeID {
-				nf.log.Warning("Line not in time  TIMEID [%s] : Line :[%s]", timeID, line)
-				continue
-			}
-			nf.processMixedColumnAsFieldAndTags(pa, Tags, t, []string{line}, "ioadapt", "adaptname")
-			continue
+		linesok, remain = utils.Grep(remain, ioadaptRegexp)
+		if len(linesok) > 0 {
+			nf.processMixedColumnAsFieldAndTags(pa, Tags, t, linesok, "ioadapt", "adaptname")
 		}
-
+		if len(remain) == 0 {
+			break
+		}
 		//TOP stats
-		if topRegexp.MatchString(line) {
-			matched := topRegexp.FindStringSubmatch(line)
-			if matched[1] != timeID {
-				nf.log.Warning("Line not in time  TIMEID [%s] : Line :[%s]", timeID, line)
-				continue
-			}
-			nf.processTopStats(pa, Tags, t, []string{line})
-			continue
+		linesok, remain = utils.Grep(remain, topRegexp)
+		if len(linesok) > 0 {
+			nf.processTopStats(pa, Tags, t, linesok)
 		}
-
-		//Other Generic Stats
-		if genStatsRegexp.MatchString(line) {
-			matched := genStatsRegexp.FindStringSubmatch(line)
-			if matched[1] != timeID {
-				nf.log.Warning("Line not in time  TIMEID [%s] : Line :[%s]", timeID, line)
-				continue
-			}
-			nf.processGenericStats(pa, Tags, t, line)
-			continue
+		if len(remain) == 0 {
+			break
 		}
-
-		nf.log.Warnf("Line not processed [%s] adding to the header definitions...", line)
-
+		//POOLS,LPAR,PAGE,PROC,PROCAIO,FILE,VM
+		linesok, remain = utils.Grep(remain, columAsFieldRegexp)
+		if len(linesok) > 0 {
+			nf.processColumnAsField(pa, Tags, t, linesok)
+		}
+		if len(remain) != 0 {
+			nf.log.Warnf("Lines not processed [%+v] Perhaps is not in Catalog????...", remain)
+		}
 	}
+
 }

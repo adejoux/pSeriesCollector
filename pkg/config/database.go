@@ -88,6 +88,10 @@ func (dbc *DatabaseCfg) InitDB() {
 	if err = dbc.x.Sync(new(DeviceCfg)); err != nil {
 		log.Fatalf("Fail to sync database DeviceCfg: %v\n", err)
 	}
+
+	if err = dbc.x.Sync(new(NmonFileInfo)); err != nil {
+		log.Fatalf("Fail to sync database NmonFileStats: %v\n", err)
+	}
 }
 
 //LoadDbConfig get data from database
@@ -103,11 +107,17 @@ func (dbc *DatabaseCfg) LoadDbConfig(cfg *DBConfig) {
 	//Load HMC engines map
 	cfg.HMC, err = dbc.GetHMCCfgMap("")
 	if err != nil {
-		log.Warningf("Some errors on get Influx Ouput servers URL :%v", err)
+		log.Warningf("Some errors on get HMC servers  URL :%v", err)
 	}
 
 	//Load Devices map
 	cfg.Devices, err = dbc.GetDeviceCfgMap("")
+	if err != nil {
+		log.Warningf("Some errors on get Devices :%v", err)
+	}
+
+	//Load NmonFile Stats map
+	cfg.NmonFileInfo, err = dbc.GetNmonFileInfoMap("")
 	if err != nil {
 		log.Warningf("Some errors on get Influx Ouput servers URL :%v", err)
 	}

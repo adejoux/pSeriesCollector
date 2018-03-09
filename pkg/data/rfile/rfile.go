@@ -3,6 +3,8 @@ package rfile
 import (
 	"bufio"
 	"compress/gzip"
+	"fmt"
+	"regexp"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/pkg/sftp"
@@ -63,17 +65,19 @@ func (rf *File) GetRemoteReader() (*RemoteFileReader, error) {
 			return nil, err
 		}
 		reader := bufio.NewReader(gr)
-		//return &RemoteFileReader{file, bufio.NewReader(reader)}, nil
 		return &RemoteFileReader{file, reader}, nil
 	}
 
 	reader := bufio.NewReader(file)
-	//return &RemoteFileReader{file, bufio.NewReader(reader)}, nil
 	return &RemoteFileReader{file, reader}, nil
 }
 
-//Content returns the nmon files content sorted in an slice of string format
-func (rf *File) Content() []string {
+//Content returns the nmon files content  from the current postion until the last writted line
+func (rf *File) Content() ([]string, int64) {
+	if rf.reader == nil {
+		rf.log.Warnf("Trying to read data without open reader")
+		return nil, 0
+	}
 
 	var lines []string
 	for {
@@ -83,6 +87,41 @@ func (rf *File) Content() []string {
 		}
 		lines = append(lines, string(line))
 	}
+	pos, err := rf.reader.Seek(0, 1)
+	if err != nil {
+		rf.log.Warnf("Error on get current remote file position")
+		return lines, 0
+	}
+	return lines, pos
+}
 
-	return lines
+//ContentUntilMatch returns the nmon files content  from the current position until one line match regexp
+func (rf *File) ContentUntilMatch(regex *regexp.Regexp) ([]string, int64, error) {
+	if rf.reader == nil {
+		return nil, 0, fmt.Errorf("Trying to read data without open reader")
+	}
+
+	var lines []string
+	for {
+		line, _, err := rf.reader.ReadLine()
+		if err != nil {
+			break
+		}
+
+		lines = append(lines, string(line))
+		if regex.MatchString(string(line)) {
+			break
+		}
+	}
+	pos, err := rf.reader.Seek(0, 1)
+	if err != nil {
+		rf.log.Warnf("Error on get current remote file position")
+		return lines, 0, err
+	}
+	return lines, pos, nil
+}
+
+// SetPosition set file current position from the beggining
+func (rf *File) SetPosition(newpos int64) (int64, error) {
+	return rf.reader.Seek(newpos, 0)
 }

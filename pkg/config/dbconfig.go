@@ -88,11 +88,21 @@ type DeviceCfg struct {
 	Description string `xorm:"description"`
 }
 
+// NmonFileInfo store status of the last read position for each Device/Nmon File
+type NmonFileInfo struct {
+	ID           string `xorm:"'id' unique" binding:"Required"`
+	DeviceName   string `xorm:"device_name" binding:"Required"`
+	FileName     string `xorm:"file_name" binding:"Required"`
+	LastPosition int64  `xorm:"last_position"`
+	LastTime     string `xorm:"last_time"`
+}
+
 // DBConfig read from DB
 type DBConfig struct {
-	Influxdb map[string]*InfluxCfg
-	HMC      map[string]*HMCCfg
-	Devices  map[string]*DeviceCfg
+	Influxdb     map[string]*InfluxCfg
+	HMC          map[string]*HMCCfg
+	Devices      map[string]*DeviceCfg
+	NmonFileInfo map[string]*NmonFileInfo
 }
 
 // Init initialices the DB
