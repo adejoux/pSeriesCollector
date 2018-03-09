@@ -22,7 +22,7 @@ import (
 //SCPU01,SCPU N vio4839n2,User ,Sys ,Wait ,Idle
 
 // OLD var cpuallRegexp = regexp.MustCompile(`^CPU\d+|^SCPU\d+|^PCPU\d+`)
-var cpuRegexp = regexp.MustCompile(`^CPU\d+|^SCPU\d+|^PCPU\d+|^+CPU_ALL`)
+var cpuRegexp = regexp.MustCompile(`^CPU\d+|^SCPU\d+|^PCPU\d+|^.*CPU_ALL`)
 
 func (nf *NmonFile) processCPUStats(pa *pointarray.PointArray, Tags map[string]string, t time.Time, lines []string) {
 
@@ -89,7 +89,7 @@ func (nf *NmonFile) processMEMStats(pa *pointarray.PointArray, Tags map[string]s
 			}
 
 			// try to convert string to integer
-			converted, parseErr := strconv.ParseFloat(value, 64)
+			converted, parseErr := strconv.ParseFloat(strings.TrimSpace(value), 64)
 			if parseErr != nil || math.IsNaN(converted) {
 				nf.log.Warnf("There is some trouble to convert data column (%d) in  Line[%s] to float in value [%s] :%s ", i+2, line, value, parseErr)
 

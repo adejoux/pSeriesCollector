@@ -67,10 +67,12 @@ func (nf *NmonFile) filePathCheck() bool {
 	t := time.Now()
 	year, month, day := t.Date()
 	hour, min, sec := t.Clock()
+	yearstr := strconv.Itoa(year)
 	//  /var/log/nmon/%{hostname}_%Y%m%d_%H%M.nmon => (/var/log/nmon/fooserver_20180305_1938.nmon )
 	pattern = strings.Replace(pattern, "%{hostname}", strings.ToLower(nf.HostName), -1)
 	pattern = strings.Replace(pattern, "%{HOSTNAME}", strings.ToUpper(nf.HostName), -1)
-	pattern = strings.Replace(pattern, "%Y", strconv.Itoa(year), -1)
+	pattern = strings.Replace(pattern, "%y", yearstr[len(yearstr)-2:], -1) //last two digits
+	pattern = strings.Replace(pattern, "%Y", yearstr, -1)
 	pattern = strings.Replace(pattern, "%m", fmt.Sprintf("%02d", int(month)), -1)
 	pattern = strings.Replace(pattern, "%d", fmt.Sprintf("%02d", day), -1)
 	pattern = strings.Replace(pattern, "%H", fmt.Sprintf("%02d", hour), 1)
@@ -94,6 +96,15 @@ func (nf *NmonFile) SetPosition(newpos int64) error {
 	return nil
 }
 
+// Reopen check  and reopen again if needed
+func (nf *NmonFile) Reopen() {
+	//close remote connection
+	nf.File.End()
+	//recreate a new connection
+	nf.File = rfile.New(nf.sftpConn, nf.log, nf.CurFile)
+
+}
+
 // ReopenIfChanged check if file has changed and reopen again if needed
 func (nf *NmonFile) ReopenIfChanged() bool {
 	if nf.filePathCheck() {
@@ -108,13 +119,13 @@ func (nf *NmonFile) ReopenIfChanged() bool {
 }
 
 // AddNmonSection add new Section
-func (nf *NmonFile) AddNmonSection(line string) {
+func (nf *NmonFile) AddNmonSection(line string) bool {
 	if len(line) == 0 {
-		return
+		return false
 	}
 	if headerRegexp.MatchString(line) {
 		nf.log.Debugf("This is line has not a valid Section : Line [%s]", line)
-		return
+		return false
 	}
 
 	/* something happens and is crashing
@@ -127,17 +138,18 @@ func (nf *NmonFile) AddNmonSection(line string) {
 	elems := strings.Split(line, nf.Delimiter)
 	if len(elems) < 3 {
 		nf.log.Errorf("ERROR: parsing the following line , not enougth columns (min 3) : %s\n", line)
-		return
+		return false
 	}
 	name := elems[0]
 
-	nf.log.Debugf("Adding serie %s\n", name)
+	nf.log.Debugf("Adding Section %s\n", name)
 	dataserie := nf.DataSeries[name]
 	//dataserie.Columns = elems[2:]
 	for _, v := range elems[2:] {
 		dataserie.Columns = append(dataserie.Columns, sanitize(v))
 	}
 	nf.DataSeries[name] = dataserie
+	return true
 }
 
 //PENDING : should we do a more acurated sanitize for field names ???
@@ -151,6 +163,7 @@ func sanitize(in string) string {
 	return strings.TrimSpace(in)
 }
 
+// InitSectionDefs Initialize section definitions.
 func (nf *NmonFile) InitSectionDefs() (int64, error) {
 	//Map init
 	nf.DataSeries = make(map[string]DataSerie)
@@ -159,11 +172,11 @@ func (nf *NmonFile) InitSectionDefs() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	nf.log.Infof("Initialice NMONFILE: %s", nf.FilePattern)
+	nf.log.Infof("InitSectionDefs: Initialice NMONFILE:  %s | Section Header length: (%d) ", nf.CurFile, len(data))
 
 	first := true
 
-	// PENDIND : add a way to skip some metrics
+	// PENDING : add a way to skip some metrics
 	last := 0
 	for k, line := range data {
 		//var badRegexp *regexp.Regexp
@@ -176,7 +189,7 @@ func (nf *NmonFile) InitSectionDefs() (int64, error) {
 			} else {
 				nf.Delimiter = ","
 			}
-			nf.log.Debugf("NMONFILE DELIMITER SET: [%s]", nf.Delimiter)
+			nf.log.Debugf("InitSectionDefs: NMONFILE DELIMITER SET: [%s]", nf.Delimiter)
 
 			first = false
 		}
@@ -186,12 +199,12 @@ func (nf *NmonFile) InitSectionDefs() (int64, error) {
 			data[k] = line
 		}
 		//begin data check
-		nf.log.Debugf("NMONFILE(%d): %s", k, line)
+		nf.log.Debugf("InitSectionDefs:NMONFILE(%d): %s", k, line)
 
 		//if time Line reached we will finish our header check but other headers could appear
 		if timeRegexp.MatchString(line) {
 			matched := timeRegexp.FindStringSubmatch(line)
-			nf.log.Debugf("Found Time ID [%s] :  %s", matched[1], matched[2])
+			nf.log.Debugf("InitSectionDefs: Found Time ID [%s] :  %s", matched[1], matched[2])
 			//nf.TimeStamps[matched[1]] = matched[2]
 			// from now all lines will have data to
 			last = k
@@ -237,14 +250,14 @@ func (nf *NmonFile) Init() (int64, error) {
 	nf.filePathCheck()
 	nf.File = rfile.New(nf.sftpConn, nf.log, nf.CurFile)
 	pos, err := nf.InitSectionDefs()
-	nf.log.Debugf("End of NMONFile %s Initialization,  pending lines on buffer: [%d] Current file position: [%d]", nf.FilePattern, len(nf.PendingLines), pos)
+	nf.log.Debugf("Init: End of NMONFile %s Initialization,  pending lines on buffer: [%d] Current file position: [%d] pending [%+v]", nf.FilePattern, len(nf.PendingLines), pos, nf.PendingLines)
 	return pos, err
 }
 
-// UpdateContent from remoteFile
-func (nf *NmonFile) UpdateContent() int64 {
+// UpdateContent from remoteFile return num of  new lines , and new pos
+func (nf *NmonFile) UpdateContent() (int, int64) {
 	morelines, pos := nf.File.Content()
-	nf.log.Infof("Got new %d lines from NmonFile ", len(morelines))
+	nf.log.Infof("UpdateContent: Got new %d lines from NmonFile ", len(morelines))
 	// replace data if needed depending on the delimiter
 	if nf.Delimiter == ";" {
 		for k, line := range morelines {
@@ -253,7 +266,7 @@ func (nf *NmonFile) UpdateContent() int64 {
 		}
 	}
 	nf.PendingLines = append(nf.PendingLines, morelines...)
-	return pos
+	return len(morelines), pos
 }
 
 const timeformat = "15:04:05 02-Jan-2006"
@@ -285,16 +298,25 @@ func (nf *NmonFile) convertTimeStamp(s string) (time.Time, error) {
 	}
 
 	//replace separator
+	if len(s) < 9 {
+		return time.Now(), fmt.Errorf("SetTimeZoneLocation: too small timestamp string to convert : %s", s)
+	}
 	stamp := s[0:8] + " " + s[9:]
 	t, err := time.ParseInLocation(timeformat, stamp, nf.tzLocation)
 	return t, err
+}
+
+//ResetPending remove buffered data
+func (nf *NmonFile) ResetPending() {
+	nf.log.Debugf("ResetPending:Reseting current Buffer containing (%d) lines [%+v]", len(nf.PendingLines), nf.PendingLines)
+	nf.PendingLines = []string{}
 }
 
 // ProcessPending process last
 func (nf *NmonFile) ProcessPending(points *pointarray.PointArray, tags map[string]string) {
 	var tsID string
 	var ts string
-	nf.log.Debug("Processing Pending Lines")
+	nf.log.Debug("ProcessPending: Init")
 
 	//do while  no more ZZZ section  found
 	for {
@@ -304,10 +326,12 @@ func (nf *NmonFile) ProcessPending(points *pointarray.PointArray, tags map[strin
 			matched := timeRegexp.FindStringSubmatch(firstline)
 			tsID = matched[1]
 			ts = matched[2]
-			nf.log.Debugf("Found Time ID [%s] :  %s", matched[1], matched[2])
+			nf.log.Debugf("ProcessPending: Found Time ID [%s] :  %s", matched[1], matched[2])
 
 		} else {
-			nf.log.Errorf("ERROR: first Pending data is not ZZZZZ (Time) section")
+			nf.log.Errorf("ProcessPending: ERROR: first Pending data is not ZZZZZ (Time) section got this one [%s]", firstline)
+			//PENDING what to do if this happens?
+			return
 		}
 
 		//a complete set of data
@@ -316,58 +340,60 @@ func (nf *NmonFile) ProcessPending(points *pointarray.PointArray, tags map[strin
 		for i := 1; i < len(nf.PendingLines); i++ {
 			line := nf.PendingLines[i]
 			if timeRegexp.MatchString(line) {
+				//if another ZZZZZ end process
 				last = i
 				break
 			}
-			nf.log.Debugf("Line (%d) : %s", i, line)
-			//if another ZZZZZ end process
+			nf.log.Debugf("ProcessPending: Line (%d) : %s", i, line)
 			//no XXXXX,TimeID,
 			nmonChunk = append(nmonChunk, line)
 		}
+		//rewrite pending lines
 		nf.PendingLines = nf.PendingLines[last:]
-		if last == 0 {
-			//no more ZZZ in the remaining Lines
-			return
-		}
 		t, err := nf.convertTimeStamp(ts)
 		if err != nil {
-			nf.log.Errorf("Error on Timestamp conversion %s", err)
+			nf.log.Errorf("ProcessPending: Error on Timestamp conversion %s", err)
 			continue
 		}
 		nf.ProcessChunk(points, tags, t, tsID, nmonChunk)
 		nf.LastTime = t
+		if last == 0 {
+			nf.log.Debugf("ProcessPending: no more lines in pending lines buffer. Exiting...")
+			//no more ZZZ in the remaining Lines
+			return
+		}
 	}
 
 }
 
 // ProcessChunk process a
 func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]string, t time.Time, timeID string, lines []string) {
-	nf.log.Infof("Decoding Chunk for Timestamp %s  with %d Elements ", t.String(), len(lines))
+	nf.log.Infof("ProcessChunk: Decoding Chunk for Timestamp %s  with %d Elements ", t.String(), len(lines))
 
 	regstr := ""
 	for _, line := range lines {
 		//check if exit header to process data
 		header := strings.Split(line, nf.Delimiter)[0]
 		if _, ok := nf.DataSeries[header]; !ok {
-			nf.log.Infof("Line  not in Header [%s] trying to add...", line)
+			nf.log.Infof("ProcessChunk: Line  not in Header [%s] trying to add...", line)
 			// if not perhaps is a new header
-			nf.AddNmonSection(line)
-			if len(regstr) > 0 {
-				regstr = regstr + "|^" + header
-			} else {
-				regstr = "^" + header
+			if nf.AddNmonSection(line) == true {
+				if len(regstr) > 0 {
+					regstr = regstr + "|^" + header
+				} else {
+					regstr = "^" + header
+				}
 			}
-
 			continue
 		}
 	}
 	if len(regstr) > 0 {
 		//there is a new
-		nf.log.Infof("Found not allowed sections REGEX = [%s]", regstr)
+		nf.log.Infof("ProcessChunk: Found not allowed sections REGEX = [%s]", regstr)
 		contains, notcontains := utils.Grep(lines, regexp.MustCompile(regstr))
 		lines = notcontains
-		nf.log.Debugf("CONTAINS:%+v", contains)
-		nf.log.Debugf("NOTCONTAINS: %+v", notcontains)
+		nf.log.Debugf("ProcessChunk: CONTAINS:%+v", contains)
+		nf.log.Debugf("ProcessChunk: NOTCONTAINS: %+v", notcontains)
 	}
 
 	remain := lines
@@ -384,7 +410,7 @@ func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]stri
 		//Filter Not In Time data
 		remain, linesnotok = utils.Grep(remain, regexp.MustCompile(`\W`+timeID))
 		if len(linesnotok) > 0 {
-			nf.log.Warning("Lines not in time  TIMEID [%s] : Lines :[%+v]", timeID, linesnotok)
+			nf.log.Warning("ProcessChunk: Lines not in time  TIMEID [%s] : Lines :[%+v]", timeID, linesnotok)
 		}
 		//-----------------------------------------------------------------------------
 		// We will only process , format and send measurements from known Nmon Seccions
@@ -492,7 +518,8 @@ func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]stri
 			nf.processColumnAsField(pa, Tags, t, linesok)
 		}
 		if len(remain) != 0 {
-			nf.log.Warnf("Lines not processed [%+v] Perhaps is not in Catalog????...", remain)
+			nf.log.Warnf("ProcessChunk: Lines not processed [%+v] Perhaps is not in Catalog????...", remain)
+			break
 		}
 	}
 

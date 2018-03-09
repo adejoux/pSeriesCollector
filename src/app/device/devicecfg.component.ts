@@ -23,7 +23,7 @@ declare var _:any;
 
 @Component({
   selector: 'devicecfg',
-  providers: [DeviceCfgService, ValidationService,,InfluxServerService],
+  providers: [DeviceCfgService, ValidationService,InfluxServerService],
   templateUrl: './deviceeditor.html',
   styleUrls: ['../../css/component-styles.css']
 })

@@ -57,7 +57,7 @@ func (rf *File) GetRemoteReader() (*RemoteFileReader, error) {
 	if err != nil {
 		return nil, err
 	}
-	rf.log.Debugf("Remote reader %#+v", file)
+	//rf.log.Debugf("Remote reader %#+v", file)
 
 	if rf.FileType == gzipfile {
 		gr, err := gzip.NewReader(file)
