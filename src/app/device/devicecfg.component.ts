@@ -94,7 +94,7 @@ export class DeviceCfgComponent {
       EnableHMCStats: [this.deviceForm ? this.deviceForm.value.EnableHMCStats : 'true', Validators.required],
       EnableNmonStats: [this.deviceForm ? this.deviceForm.value.EnableNmonStats : 'true', Validators.required],
       NmonFreq: [this.deviceForm ? this.deviceForm.value.NmonFreq : 60,  ValidationService.uintegerNotZeroValidator],
-      NmonOutDB: [this.deviceForm ? this.deviceForm.value.NmonOutDB: ''],
+      NmonOutDB: [this.deviceForm ? this.deviceForm.value.NmonOutDB : '', Validators.required],
       NmonIP: [this.deviceForm ? this.deviceForm.value.NmonIP : ''],
       NmonSSHUser: [this.deviceForm ? this.deviceForm.value.NmonSSHUser : ''],
       NmonSSHKey: [this.deviceForm ? this.deviceForm.value.NmonSSHKey : ''],
@@ -164,8 +164,22 @@ export class DeviceCfgComponent {
       case 'tableaction':
         this.applyAction(action.event, action.data);
       break;
+      case 'editenabled':
+        this.enableEdit();
+      break;
     }
   }
+
+  enableEdit() {
+    this.influxServerService.getInfluxServer(null)
+      .subscribe(
+        data => {
+          this.tableAvailableActions = new AvailableTableActions(this.defaultConfig['slug'],this.createMultiselectArray(data,'ID','ID','Description')).availableOptions
+        },
+        err => console.log(err),
+        () => console.log()
+      );
+    }
 
   viewItem(id) {
     console.log('view', id);
@@ -300,7 +314,7 @@ export class DeviceCfgComponent {
         }
       }
     } else {
-      return this.deviceCfgService.editDeviceCfg(component, component.ID)
+      return this.deviceCfgService.editDeviceCfg(component, component.ID,true)
       .do(
         (test) =>  { this.counterItems++ },
         (err) => { this.counterErrors.push({'ID': component['ID'], 'error' : err['_body']})}
