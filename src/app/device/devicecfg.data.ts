@@ -6,10 +6,12 @@ export const DeviceCfgComponentConfig: any =
       { title: 'Dev  Name', name: 'Name' },
       { title: 'Serial Number', name: 'SerialNumber' },
       { title: 'OS Version',name:'OSVersion'},
-      { title: 'type', name: 'Type' },
+      { title: 'Device Type', name: 'Type' },
       { title: 'Location', name: 'Location' },
-      { title: 'Enable HMC stats', name: 'EnableHMCStats' },
+      { title: 'Enable HMC Stats', name: 'EnableHMCStats' },
       { title: 'Enable Nmon Stats', name: 'EnableNmonStats' },
+      { title: 'NmonOutDB', name: 'NmonOutDB' },
+      { title: 'NmonSSHUser', name: 'NmonSSHUser' },
       { title: 'ExtraTags', name: 'ExtraTags' }
     ],
     'slug' : 'devicecfg'

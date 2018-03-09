@@ -432,7 +432,7 @@ export class RuntimeComponent implements OnDestroy {
       );
   }
 
-  forceDevCScan(id) {
+  forceDevScan(id) {
     console.log("ID,event", id, event);
     this.runtimeService.forceDevScan(id)
       .subscribe(
