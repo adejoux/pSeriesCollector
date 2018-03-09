@@ -1,12 +1,13 @@
 <h2>{{defaultConfig.name}}</h2>
+<div #blocker style="position: absolute; top: 50%;"></div>
 <ng-container [ngSwitch]="editmode">
   <ng-template ngSwitchCase="list">
     <test-modal #viewModal [titleName]="defaultConfig.name"></test-modal>
     <test-modal #viewModalDelete titleName='Deleting:' [customMessage]="['Deleting this OutHTTP Wrapper will affect the following components','Deleting this OutHTTP Wrapper will NOT affect any component. Safe delete']" [customMessageClass]="['alert alert-danger','alert alert-success']"
         [showValidation]="true" [textValidation]="'Delete'" [controlSize]="true" (validationClicked)="deleteSampleItem($event)">
     </test-modal>
-    <table-list #listTableComponent [typeComponent]="'outhttp-component'" [data]="data" [columns]="defaultConfig['table-columns']" [counterItems]="counterItems" [counterErrors]="counterErrors" [selectedArray]="selectedArray" [isRequesting]="isRequesting"
-        [tableRole]="tableRole" [roleActions]="overrideRoleActions" (customClicked)="customActions($event)"></table-list>
+    <table-list #listTableComponent [typeComponent]="defaultConfig['slug']" [data]="data" [columns]="defaultConfig['table-columns']" [counterItems]="counterItems" [counterErrors]="counterErrors" [selectedArray]="selectedArray" [isRequesting]="isRequesting"
+        [tableRole]="tableRole" overrideEditEnabled="true" [tableAvailableActions]="tableAvailableActions" [roleActions]="overrideRoleActions" (customClicked)="customActions($event)"></table-list>
     <export-file-modal #exportFileModal [showValidation]="true" [exportType]="defaultConfig['slug']" [textValidation]="'Export'" titleName='Exporting:'></export-file-modal>
   </ng-template>
   <ng-template ngSwitchDefault>
@@ -16,7 +17,7 @@
           <h4 style="display:inline"><i class="glyphicon glyphicon-cog text-info"></i> {{ editmode | uppercase}}</h4>
           <div class="pull-right" style="margin-right: 20px">
             <div style="display:inline" tooltip='Import Devices' container=body>
-                <button class="btn btn-info" type="button" (click)="importHMCDevices(sampleComponentForm.value)" [disabled]="!sampleComponentForm.valid"> <i class="glyphicon glyphicon-save"></i></button>
+                <button class="btn btn-primary" type="button" (click)="importHMCDevices(sampleComponentForm.value)" [disabled]="!sampleComponentForm.valid"> <i class="glyphicon glyphicon-import"></i></button>
             </div>
             <div style="display:inline" tooltip='Test Connection' container=body>
                 <button class="btn btn-info" type="button" (click)="testHMCServerConnection(sampleComponentForm.value)" [disabled]="!sampleComponentForm.valid"> <i class="glyphicon glyphicon-flash"></i></button>

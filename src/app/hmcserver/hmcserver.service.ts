@@ -34,8 +34,8 @@ export class HMCServerService {
 
     }
 
-    editHMCServerItem(dev, id) {
-        return this.http.put('/api/cfg/hmcserver/'+id,JSON.stringify(dev,this.jsonParser))
+    editHMCServerItem(dev, id, hideAlert?) {
+        return this.http.put('/api/cfg/hmcserver/'+id,JSON.stringify(dev,this.jsonParser),null,hideAlert)
         .map( (responseData) => responseData.json());
     }
 
@@ -73,9 +73,9 @@ export class HMCServerService {
       });
     };
 
-    deleteHMCServerItem(id : string) {
+    deleteHMCServerItem(id : string, hideAlert?) {
         // return an observable
-        return this.http.delete('/api/cfg/hmcserver/'+id)
+        return this.http.delete('/api/cfg/hmcserver/'+id, null, hideAlert)
         .map( (responseData) =>
          responseData.json()
         );
@@ -86,7 +86,8 @@ export class HMCServerService {
         return this.http.post('/api/cfg/hmcserver/ping/',JSON.stringify(influxserver,this.jsonParser), null, hideAlert)
         .map((responseData) => responseData.json());
       };
-      importHMCDevices(influxserver,hideAlert?) {
+
+    importHMCDevices(influxserver,hideAlert?) {
         // return an observable
         return this.http.post('/api/cfg/hmcserver/import/',JSON.stringify(influxserver,this.jsonParser), null, hideAlert)
         .map((responseData) => responseData.json());

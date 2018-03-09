@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, ViewChild, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ViewChild, OnInit, ViewContainerRef } from '@angular/core';
 import { FormBuilder, Validators} from '@angular/forms';
 import { FormArray, FormGroup, FormControl} from '@angular/forms';
 import { IMultiSelectOption, IMultiSelectSettings, IMultiSelectTexts } from '../common/multiselect-dropdown';
@@ -6,10 +6,13 @@ import { IMultiSelectOption, IMultiSelectSettings, IMultiSelectTexts } from '../
 import { HMCServerService } from './hmcserver.service';
 import { ValidationService } from '../common/custom-validation/validation.service'
 import { ExportServiceCfg } from '../common/dataservice/export.service'
+import { BlockUIService } from '../common/blockui/blockui-service';
+import { BlockUIComponent } from '../common/blockui/blockui-component';
 
 import { GenericModal } from '../common/custom-modal/generic-modal';
 import { ExportFileModal } from '../common/dataservice/export-file-modal';
 import { Observable } from 'rxjs/Rx';
+import { AvailableTableActions } from '../common/table-available-actions';
 
 import { TableListComponent } from '../common/table-list.component';
 import { HMCServerComponentConfig, TableRole, OverrideRoleActions } from './hmcserver.data';
@@ -19,7 +22,7 @@ declare var _:any;
 
 @Component({
   selector: 'hmcserver-component',
-  providers: [HMCServerService, ValidationService,InfluxServerService],
+  providers: [HMCServerService, BlockUIService, ValidationService,InfluxServerService],
   templateUrl: './hmcserver.component.html',
   styleUrls: ['../../css/component-styles.css']
 })
@@ -28,6 +31,7 @@ export class HMCServerComponent implements OnInit {
   @ViewChild('viewModal') public viewModal: GenericModal;
   @ViewChild('viewModalDelete') public viewModalDelete: GenericModal;
   @ViewChild('exportFileModal') public exportFileModal : ExportFileModal;
+  @ViewChild('blocker', { read: ViewContainerRef }) container: ViewContainerRef;
 
   public alertHandler:any;
   public editmode: string; //list , create, modify
@@ -44,6 +48,7 @@ export class HMCServerComponent implements OnInit {
   private mySettingsInflux: IMultiSelectSettings = {
     singleSelect: true,
   };
+  public tableAvailableActions : any;
 
   public data : Array<any>;
   public isRequesting : boolean;
@@ -56,7 +61,7 @@ export class HMCServerComponent implements OnInit {
     this.reloadData();
   }
 
-  constructor(public influxServerService: InfluxServerService, public hmcserverService: HMCServerService, public exportServiceCfg : ExportServiceCfg, builder: FormBuilder) {
+  constructor(public _blocker: BlockUIService, public influxServerService: InfluxServerService, public hmcserverService: HMCServerService, public exportServiceCfg : ExportServiceCfg, builder: FormBuilder) {
     this.builder = builder;
   }
 
@@ -82,30 +87,39 @@ export class HMCServerComponent implements OnInit {
   }
 
   testHMCServerConnection(data:any) {
-    this.hmcserverService.testHMCServer(data, true)
+    this.hmcserverService.testHMCServer(data,true)
     .subscribe(
-    data =>  this.alertHandler = {msg: 'HCM Version: '+data['Message'], result : data['Result'], elapsed: data['Elapsed'], type: 'success', closable: true},
+    data =>  {
+        this.alertHandler = {msg: 'HCM Version: '+data['Message'], result : data['Result'], elapsed: data['Elapsed'], type: 'success', closable: true}
+    },
     err => {
         let error = err.json();
         this.alertHandler = {msg: error['Message'], elapsed: error['Elapsed'], result : error['Result'], type: 'danger', closable: true}
       },
     () =>  { console.log("DONE")}
-  );
-  
-}
+    );
+  }
 
-
-importHMCDevices(data:any) {
-  this.hmcserverService.importHMCDevices(data, true)
-  .subscribe(
-  data =>  this.alertHandler = {msg: 'HCM Version: '+data['Message'], result : data['Result'], elapsed: data['Elapsed'], type: 'success', closable: true},
-  err => {
-      let error = err.json();
-      this.alertHandler = {msg: error['Message'], elapsed: error['Elapsed'], result : error['Result'], type: 'danger', closable: true}
-    },
-  () =>  { console.log("DONE")}
-);
-}
+  importHMCDevices(data:any) {
+    var r = true;
+    r = confirm("Import all Devices from " + data.ID+". This will override all defined devices. Proceed?");
+    if (r == true) {
+      this._blocker.start(this.container, "Importing all Devices from "+ data.ID +". Please wait...");
+      this.hmcserverService.importHMCDevices(data, true)
+        .subscribe(
+        data =>  {
+          this.alertHandler = {msg: 'HCM Version: '+data['Message'], result : data['Result'], elapsed: data['Elapsed'], type: 'success', closable: true}
+          this._blocker.stop();
+        },
+        err => {
+            this._blocker.stop();
+            let error = err.json();
+            this.alertHandler = {msg: error['Message'], elapsed: error['Elapsed'], result : error['Result'], type: 'danger', closable: true}
+          },
+        () =>  { console.log("DONE")}
+      );
+    }
+  }
 
   reloadData() {
     // now it's a simple subscription to the observable
@@ -122,7 +136,7 @@ importHMCDevices(data:any) {
       );
   }
 
-  customActions(action : any) {
+    customActions(action : any) {
     switch (action.option) {
       case 'reload' :
         this.reloadData();
@@ -145,8 +159,27 @@ importHMCDevices(data:any) {
       case 'tableaction':
         this.applyAction(action.event, action.data);
       break;
+      case 'editenabled':
+        this.enableEdit();
+      break;
+      case 'importHMCDevices':
+        this.importHMCDevices(action.event);
+      break;
     }
   }
+
+  enableEdit() {
+    let obsArray = [];
+    //obsArray.push(this.getMeasFiltersforDevices);
+    this.influxServerService.getInfluxServer(null)
+      .subscribe(
+        data => {
+          this.tableAvailableActions = new AvailableTableActions(this.defaultConfig['slug'],this.createMultiselectArray(data,'ID','ID','Description')).availableOptions
+        },
+        err => console.log(err),
+        () => console.log()
+      );
+    }
 
 
   applyAction(action : any, data? : Array<any>) : void {
@@ -231,7 +264,7 @@ importHMCDevices(data:any) {
       () => { this.viewModalDelete.hide(); this.reloadData() }
       );
     } else {
-      return this.hmcserverService.deleteHMCServerItem(id)
+      return this.hmcserverService.deleteHMCServerItem(id,true)
       .do(
         (test) =>  { this.counterItems++; console.log(this.counterItems)},
         (err) => { this.counterErrors.push({'ID': id, 'error' : err})}
@@ -296,7 +329,7 @@ importHMCDevices(data:any) {
         }
       }
     } else {
-      return this.hmcserverService.editHMCServerItem(component, component.ID)
+      return this.hmcserverService.editHMCServerItem(component, component.ID, true)
       .do(
         (test) =>  { this.counterItems++ },
         (err) => { this.counterErrors.push({'ID': component['ID'], 'error' : err['_body']})}
