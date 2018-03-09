@@ -2,11 +2,12 @@ package hmc
 
 import (
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/adejoux/pSeriesCollector/pkg/data/hmcpcm"
 	"github.com/adejoux/pSeriesCollector/pkg/data/pointarray"
 	"github.com/adejoux/pSeriesCollector/pkg/data/utils"
-	"strconv"
-	"time"
 )
 
 const timeFormat = "2006-01-02T15:04:05-0700"
@@ -15,8 +16,8 @@ const timeFormat = "2006-01-02T15:04:05-0700"
 func (d *HMCServer) GenerateServerMeasurements(pa *pointarray.PointArray, Tags map[string]string, t time.Time, s hmcpcm.ServerData) {
 
 	fieldproc := map[string]interface{}{
-		"TotalProcUnits":        s.Processor.TotalProcUnits[0],
-		"UtilizedProcUnits":     s.Processor.UtilizedProcUnits[0],
+		"totalProcUnits":        s.Processor.TotalProcUnits[0],
+		"utilizedProcUnits":     s.Processor.UtilizedProcUnits[0],
 		"availableProcUnits":    s.Processor.AvailableProcUnits[0],
 		"configurableProcUnits": s.Processor.ConfigurableProcUnits[0],
 	}
@@ -24,10 +25,10 @@ func (d *HMCServer) GenerateServerMeasurements(pa *pointarray.PointArray, Tags m
 	pa.Append("SystemProcessor", Tags, fieldproc, t)
 
 	fieldmem := map[string]interface{}{
-		"TotalMem":           s.Memory.TotalMem[0],
+		"totalMem":           s.Memory.TotalMem[0],
 		"assignedMemToLpars": s.Memory.AssignedMemToLpars[0],
 		"availableMem":       s.Memory.AvailableMem[0],
-		"ConfigurableMem":    s.Memory.ConfigurableMem[0],
+		"configurableMem":    s.Memory.ConfigurableMem[0],
 	}
 
 	pa.Append("SystemMemory", Tags, fieldmem, t)
@@ -149,7 +150,7 @@ func (d *HMCServer) GenerateViosMeasurements(pa *pointarray.PointArray, Tags map
 				"sentPackets":     net.SentPackets[0],
 				"droppedPackets":  net.DroppedPackets[0],
 				"sentBytes":       net.SentBytes[0],
-				"ReceivedBytes":   net.ReceivedBytes[0],
+				"receivedBytes":   net.ReceivedBytes[0],
 			}
 
 			if len(net.TransferredBytes) > 0 {
@@ -168,7 +169,7 @@ func (d *HMCServer) GenerateViosMeasurements(pa *pointarray.PointArray, Tags map
 				"sentPackets":     net.SentPackets[0],
 				"droppedPackets":  net.DroppedPackets[0],
 				"sentBytes":       net.SentBytes[0],
-				"ReceivedBytes":   net.ReceivedBytes[0],
+				"receivedBytes":   net.ReceivedBytes[0],
 			}
 
 			if len(net.TransferredBytes) > 0 {
@@ -187,23 +188,23 @@ func (d *HMCServer) GenerateLparMeasurements(pa *pointarray.PointArray, Tags map
 		LparTags := utils.MapDupAndAdd(Tags, map[string]string{"partition": lpar.Name})
 
 		fieldproc := map[string]interface{}{
-			"MaxVirtualProcessors":        lpar.Processor.MaxVirtualProcessors[0],
-			"MaxProcUnits":                lpar.Processor.MaxProcUnits[0],
-			"EntitledProcUnits":           lpar.Processor.EntitledProcUnits[0],
-			"UtilizedProcUnits":           lpar.Processor.UtilizedProcUnits[0],
-			"UtilizedCappedProcUnits":     lpar.Processor.UtilizedCappedProcUnits[0],
-			"UtilizedUncappedProcUnits":   lpar.Processor.UtilizedUncappedProcUnits[0],
-			"IdleProcUnits":               lpar.Processor.IdleProcUnits[0],
-			"DonatedProcUnits":            lpar.Processor.DonatedProcUnits[0],
-			"TimeSpentWaitingForDispatch": lpar.Processor.TimeSpentWaitingForDispatch[0],
-			"TimePerInstructionExecution": lpar.Processor.TimePerInstructionExecution[0],
+			"maxVirtualProcessors":        lpar.Processor.MaxVirtualProcessors[0],
+			"maxProcUnits":                lpar.Processor.MaxProcUnits[0],
+			"entitledProcUnits":           lpar.Processor.EntitledProcUnits[0],
+			"utilizedProcUnits":           lpar.Processor.UtilizedProcUnits[0],
+			"utilizedCappedProcUnits":     lpar.Processor.UtilizedCappedProcUnits[0],
+			"utilizedUncappedProcUnits":   lpar.Processor.UtilizedUncappedProcUnits[0],
+			"idleProcUnits":               lpar.Processor.IdleProcUnits[0],
+			"donatedProcUnits":            lpar.Processor.DonatedProcUnits[0],
+			"timeSpentWaitingForDispatch": lpar.Processor.TimeSpentWaitingForDispatch[0],
+			"timePerInstructionExecution": lpar.Processor.TimePerInstructionExecution[0],
 		}
 
 		pa.Append("PartitionProcessor", LparTags, fieldproc, t)
 
 		fieldmem := map[string]interface{}{
-			"LogicalMem":        lpar.Memory.LogicalMem[0],
-			"BackedPhysicalMem": lpar.Memory.BackedPhysicalMem[0],
+			"logicalMem":        lpar.Memory.LogicalMem[0],
+			"backedPhysicalMem": lpar.Memory.BackedPhysicalMem[0],
 		}
 
 		pa.Append("PartitionMemory", LparTags, fieldmem, t)
@@ -212,8 +213,8 @@ func (d *HMCServer) GenerateLparMeasurements(pa *pointarray.PointArray, Tags map
 
 			FcaTags := utils.MapDupAndAdd(LparTags, map[string]string{
 				"wwpn":             vfc.Wwpn,
-				"PhysicalPortWWPN": vfc.PhysicalPortWWPN,
-				"ViosID":           strconv.Itoa(vfc.ViosID),
+				"physicalPortWWPN": vfc.PhysicalPortWWPN,
+				"viosID":           strconv.Itoa(vfc.ViosID),
 			})
 
 			fields := map[string]interface{}{
@@ -231,7 +232,7 @@ func (d *HMCServer) GenerateLparMeasurements(pa *pointarray.PointArray, Tags map
 
 			VscsiTags := utils.MapDupAndAdd(LparTags, map[string]string{
 				"device": vscsi.ID,
-				"ViosID": strconv.Itoa(vscsi.ViosID),
+				"viosID": strconv.Itoa(vscsi.ViosID),
 			})
 
 			fields := map[string]interface{}{
@@ -249,10 +250,10 @@ func (d *HMCServer) GenerateLparMeasurements(pa *pointarray.PointArray, Tags map
 		for _, net := range lpar.Network.VirtualEthernetAdapters {
 
 			NetTags := utils.MapDupAndAdd(LparTags, map[string]string{
-				"VlanID":    strconv.Itoa(net.VlanID),
-				"VswitchID": strconv.Itoa(net.VswitchID),
-				"SEA":       net.SharedEthernetAdapterID,
-				"ViosID":    strconv.Itoa(net.ViosID),
+				"vlanID":    strconv.Itoa(net.VlanID),
+				"vswitchID": strconv.Itoa(net.VswitchID),
+				"sea":       net.SharedEthernetAdapterID,
+				"viosID":    strconv.Itoa(net.ViosID),
 			})
 
 			fields := map[string]interface{}{
@@ -261,13 +262,13 @@ func (d *HMCServer) GenerateLparMeasurements(pa *pointarray.PointArray, Tags map
 				"sentPackets":              net.SentPackets[0],
 				"droppedPackets":           net.DroppedPackets[0],
 				"sentBytes":                net.SentBytes[0],
-				"ReceivedBytes":            net.ReceivedBytes[0],
+				"receivedBytes":            net.ReceivedBytes[0],
 				"transferredPhysicalBytes": net.TransferredPhysicalBytes[0],
 				"receivedPhysicalPackets":  net.ReceivedPhysicalPackets[0],
 				"sentPhysicalPackets":      net.SentPhysicalPackets[0],
 				"droppedPhysicalPackets":   net.DroppedPhysicalPackets[0],
 				"sentPhysicalBytes":        net.SentPhysicalBytes[0],
-				"ReceivedPhysicalBytes":    net.ReceivedPhysicalBytes[0],
+				"receivedPhysicalBytes":    net.ReceivedPhysicalBytes[0],
 			}
 
 			pa.Append("PartitionVirtualEthernetAdapters", NetTags, fields, t)
@@ -277,10 +278,10 @@ func (d *HMCServer) GenerateLparMeasurements(pa *pointarray.PointArray, Tags map
 		for _, net := range lpar.Network.SriovLogicalPorts {
 
 			NetTags := utils.MapDupAndAdd(LparTags, map[string]string{
-				"DrcIndex":    net.DrcIndex,
-				"PhyLocation": net.PhysicalLocation,
-				"PhyDrcIndex": net.PhysicalDrcIndex,
-				"PhyPortID":   strconv.Itoa(net.PhysicalPortID),
+				"drcIndex":    net.DrcIndex,
+				"phyLocation": net.PhysicalLocation,
+				"phyDrcIndex": net.PhysicalDrcIndex,
+				"phyPortID":   strconv.Itoa(net.PhysicalPortID),
 			})
 
 			fields := map[string]interface{}{
@@ -288,7 +289,7 @@ func (d *HMCServer) GenerateLparMeasurements(pa *pointarray.PointArray, Tags map
 				"sentPackets":     net.SentPackets[0],
 				"droppedPackets":  net.DroppedPackets[0],
 				"sentBytes":       net.SentBytes[0],
-				"ReceivedBytes":   net.ReceivedBytes[0],
+				"receivedBytes":   net.ReceivedBytes[0],
 			}
 
 			pa.Append("PartitionSriovLogicalPorts", NetTags, fields, t)
