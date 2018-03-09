@@ -280,7 +280,7 @@ export class InfluxServerCfgComponent {
           r = confirm("Changing Influx Server ID from " + this.oldID + " to " + this.influxserverForm.value.ID + ". Proceed?");
         }
         if (r == true) {
-          this.influxServerService.editInfluxServer(this.influxserverForm.value, this.oldID, true)
+          this.influxServerService.editInfluxServer(this.influxserverForm.value, this.oldID)
             .subscribe(data => { console.log(data) },
             err => console.error(err),
             () => { this.editmode = "list"; this.reloadData() }
@@ -288,7 +288,7 @@ export class InfluxServerCfgComponent {
         }
       }
     } else {
-      return this.influxServerService.editInfluxServer(component, component.ID)
+      return this.influxServerService.editInfluxServer(component, component.ID, true)
       .do(
         (test) =>  { this.counterItems++ },
         (err) => { this.counterErrors.push({'ID': component['ID'], 'error' : err['_body']})}
