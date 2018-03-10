@@ -39,6 +39,11 @@ func (pa *PointArray) Append(meas string, tags map[string]string, fields map[str
 	}
 }
 
+// Length  return num of attached points
+func (pa *PointArray) Length() int {
+	return len(pa.PtArray)
+}
+
 // Flush set dat
 func (pa *PointArray) Flush() {
 	if pa.bpts != nil {

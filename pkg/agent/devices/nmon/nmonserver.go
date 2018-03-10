@@ -69,7 +69,7 @@ func (d *Server) ToJSON() ([]byte, error) {
 // GetOutSenderFromMap to get info about the sender will use
 func (d *Server) GetOutSenderFromMap(influxdb map[string]*output.InfluxDB) (*output.InfluxDB, error) {
 	if len(d.cfg.NmonOutDB) == 0 {
-		d.Warnf("No OutDB configured on the device")
+		d.Warnf("GetOutSenderFromMap No OutDB configured on the device")
 	}
 	var ok bool
 	name := d.cfg.NmonOutDB
@@ -80,6 +80,7 @@ func (d *Server) GetOutSenderFromMap(influxdb map[string]*output.InfluxDB) (*out
 			return nil, fmt.Errorf("No influx config for the device: %s", d.cfg.ID)
 		}
 	}
+	d.Debugf("GetOutSenderFromMap: This NMON server has configured the %s influxdb : %#+v", name, d.Influx)
 
 	return d.Influx, nil
 }

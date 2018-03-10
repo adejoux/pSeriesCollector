@@ -295,7 +295,13 @@ func (nf *NmonFile) processMixedColumnAsFieldAndTags(pa *pointarray.PointArray, 
 				delete(meas, k)
 			}
 		}
-		pa.Append(measname, tags, meas, t)
+		// will send only measurements with fields
+		// elsewhere influx client will show an error
+		if len(meas) > 0 {
+			pa.Append(measname, tags, meas, t)
+		} else {
+			nf.log.Warnf("No fields for tag %s = %s , skipping measurement  %s for this tag", tagname, kmeas, measname)
+		}
 	}
 }
 
@@ -438,7 +444,14 @@ func (nf *NmonFile) processColumnAsTags(pa *pointarray.PointArray, Tags map[stri
 				delete(meas, k)
 			}
 		}
-		pa.Append(measname, tags, meas, t)
+		// will send only measurements with fields
+		// elsewhere influx client will show an error
+		if len(meas) > 0 {
+			pa.Append(measname, tags, meas, t)
+		} else {
+			nf.log.Warnf("No fields for tag %s = %s , skipping measurement  %s for this tag", tagname, kmeas, measname)
+		}
+
 	}
 }
 
