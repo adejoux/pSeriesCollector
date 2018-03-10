@@ -21,7 +21,7 @@ type Server struct {
 	devices.Base
 	client   *sftp.Client
 	cfg      *config.DeviceCfg
-	nmonFile *NmonFile
+	NmonFile *NmonFile
 }
 
 // Ping check connection to the

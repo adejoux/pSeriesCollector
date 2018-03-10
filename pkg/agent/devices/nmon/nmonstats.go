@@ -156,9 +156,9 @@ func (nf *NmonFile) processTopStats(pa *pointarray.PointArray, Tags map[string]s
 		for i, value := range elems[3:12] {
 			column := nf.DataSeries["TOP"].Columns[i]
 
-			if len(nf.Serial) > 0 {
+			/*if len(nf.Serial) > 0 {
 				tags["serial"] = nf.Serial
-			}
+			}*/
 
 			// try to convert string to integer
 			converted, parseErr := strconv.ParseFloat(value, 64)

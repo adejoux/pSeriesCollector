@@ -34,14 +34,14 @@ type DataSerie struct {
 
 // NmonFile type for remote NmonFiles
 type NmonFile struct {
-	File         *rfile.File
-	log          *logrus.Logger
-	FilePattern  string
-	CurFile      string
-	Delimiter    string
-	Hostname     string
-	OS           string
-	Serial       string
+	File        *rfile.File
+	log         *logrus.Logger
+	FilePattern string
+	CurFile     string
+	Delimiter   string
+	//Hostname     string <-not really needed
+	//OS           string <-not really needed
+	//Serial       string <-not really needed
 	TextContent  string
 	DataSeries   map[string]DataSerie
 	sftpConn     *sftp.Client
@@ -51,7 +51,7 @@ type NmonFile struct {
 	LastTime     time.Time
 }
 
-// NewNmonFile create a NmonFile
+// NewNmonFile create a NmonFile , Hostname needed to Parse pattern
 func NewNmonFile(sftp *sftp.Client, l *logrus.Logger, pattern string, host string) *NmonFile {
 	return &NmonFile{log: l, FilePattern: pattern, sftpConn: sftp, HostName: host}
 }
@@ -211,6 +211,7 @@ func (nf *NmonFile) InitSectionDefs() (int64, error) {
 			break
 		}
 
+		/* while not really needed we will disable these data
 		if hostRegexp.MatchString(line) {
 			matched := hostRegexp.FindStringSubmatch(line)
 			nf.Hostname = strings.ToLower(matched[1])
@@ -227,7 +228,7 @@ func (nf *NmonFile) InitSectionDefs() (int64, error) {
 			matched := osRegexp.FindStringSubmatch(line)
 			nf.OS = strings.ToLower(matched[1])
 			continue
-		}
+		}*/
 
 		if infoRegexp.MatchString(line) {
 			matched := infoRegexp.FindStringSubmatch(line)

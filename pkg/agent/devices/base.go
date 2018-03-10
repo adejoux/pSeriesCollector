@@ -26,7 +26,7 @@ type Base struct {
 	//Scan
 	UpdateScanFreq int
 	//stats
-	RtStats DevStat          //Runtime Internal statistic
+	RtStats DevStat          `json:"-"` //Runtime Internal statistic
 	Stats   *DevStat         //Public info for thread safe accessing to the data ()
 	Influx  *output.InfluxDB `json:"-"`
 	Freq    int
