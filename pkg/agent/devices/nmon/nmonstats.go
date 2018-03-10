@@ -37,8 +37,8 @@ func (nf *NmonFile) processCPUStats(pa *pointarray.PointArray, Tags map[string]s
 		fields := make(map[string]interface{})
 
 		for i, value := range elems[2:] {
-			if len(nf.DataSeries[name].Columns) < i+1 {
-				nf.log.Warnf("Entry added position %d in serie %s since nmon start: skipped COLUMNS [%#+v] Line [%s]", i+1, name, nf.DataSeries[name], line)
+			if len(nf.Sections[name].Columns) < i+1 {
+				nf.log.Warnf("Entry added position %d in serie %s since nmon start: skipped COLUMNS [%#+v] Line [%s]", i+1, name, nf.Sections[name], line)
 				continue
 			}
 
@@ -49,7 +49,7 @@ func (nf *NmonFile) processCPUStats(pa *pointarray.PointArray, Tags map[string]s
 				//if not working, skip to next value. We don't want text values in InfluxDB.
 				continue
 			}
-			column := nf.DataSeries[name].Columns[i]
+			column := nf.Sections[name].Columns[i]
 			fields[column] = converted
 
 		}
@@ -83,8 +83,8 @@ func (nf *NmonFile) processMEMStats(pa *pointarray.PointArray, Tags map[string]s
 		name := elems[0]
 
 		for i, value := range elems[2:] {
-			if len(nf.DataSeries[name].Columns) < i+1 {
-				nf.log.Warnf("Entry added position %d in serie %s since nmon start: skipped COLUMNS [%#+v] LINE [%s] ", i+1, name, nf.DataSeries[name], line)
+			if len(nf.Sections[name].Columns) < i+1 {
+				nf.log.Warnf("Entry added position %d in serie %s since nmon start: skipped COLUMNS [%#+v] LINE [%s] ", i+1, name, nf.Sections[name], line)
 				continue
 			}
 
@@ -98,7 +98,7 @@ func (nf *NmonFile) processMEMStats(pa *pointarray.PointArray, Tags map[string]s
 			}
 
 			// will add prefix on the fields if needed
-			column := nf.DataSeries[name].Columns[i]
+			column := nf.Sections[name].Columns[i]
 
 			var fieldname string
 			switch name {
@@ -154,7 +154,7 @@ func (nf *NmonFile) processTopStats(pa *pointarray.PointArray, Tags map[string]s
 		})
 
 		for i, value := range elems[3:12] {
-			column := nf.DataSeries["TOP"].Columns[i]
+			column := nf.Sections["TOP"].Columns[i]
 
 			/*if len(nf.Serial) > 0 {
 				tags["serial"] = nf.Serial
@@ -229,13 +229,13 @@ func (nf *NmonFile) processMixedColumnAsFieldAndTags(pa *pointarray.PointArray, 
 	for _, line := range lines {
 		elems := strings.Split(line, nf.Delimiter)
 		name := elems[0]
-		for k, col := range nf.DataSeries[name].Columns {
+		for k, col := range nf.Sections[name].Columns {
 			if len(col) == 0 {
 				continue
 			}
 			matched := tagfieldRegexp.FindStringSubmatch(col)
 			if len(matched) < 3 {
-				nf.log.Warnf("There is some trouble on getting tagname-fieldname from column# [%d] value [%s] size [%d] AllColumns[%+v] Matched[%+v]", k, col, len(col), nf.DataSeries[name], matched)
+				nf.log.Warnf("There is some trouble on getting tagname-fieldname from column# [%d] value [%s] size [%d] AllColumns[%+v] Matched[%+v]", k, col, len(col), nf.Sections[name], matched)
 				continue
 			}
 			tag := matched[1]
@@ -254,18 +254,18 @@ func (nf *NmonFile) processMixedColumnAsFieldAndTags(pa *pointarray.PointArray, 
 		name := elems[0]
 
 		for i, value := range elems[2:] {
-			if len(nf.DataSeries[name].Columns) < i+1 {
-				nf.log.Warnf("Entry added position %d in serie %s since nmon start: skipped COLUMNS [%#+v] Line [%s]", i+1, name, nf.DataSeries[name], line)
+			if len(nf.Sections[name].Columns) < i+1 {
+				nf.log.Warnf("Entry added position %d in serie %s since nmon start: skipped COLUMNS [%#+v] Line [%s]", i+1, name, nf.Sections[name], line)
 				continue
 			}
-			column := nf.DataSeries[name].Columns[i]
+			column := nf.Sections[name].Columns[i]
 			//on NET devices data could finish with ","=> NET,a,b,c,
 			if len(column) == 0 {
 				continue
 			}
 			matched := tagfieldRegexp.FindStringSubmatch(column)
 			if len(matched) < 3 {
-				nf.log.Warnf("There is some trouble on getting tagname-fieldname from column (%d) Columns[%+v] Matched[%+v]", i, nf.DataSeries[name], matched)
+				nf.log.Warnf("There is some trouble on getting tagname-fieldname from column (%d) Columns[%+v] Matched[%+v]", i, nf.Sections[name], matched)
 				continue
 			}
 			tag := matched[1]
@@ -397,7 +397,7 @@ func (nf *NmonFile) processColumnAsTags(pa *pointarray.PointArray, Tags map[stri
 		//Tags from Column Names
 		elems := strings.Split(line, nf.Delimiter)
 		name := elems[0]
-		for _, col := range nf.DataSeries[name].Columns {
+		for _, col := range nf.Sections[name].Columns {
 			tag := strings.ToLower(col)
 			if _, ok := measurements[tag]; !ok {
 				measurements[tag] = make(map[string]interface{})
@@ -415,11 +415,11 @@ func (nf *NmonFile) processColumnAsTags(pa *pointarray.PointArray, Tags map[stri
 		field := fieldFromLine(line, fieldregexp)
 
 		for i, value := range elems[2:] {
-			if len(nf.DataSeries[name].Columns) < i+1 {
-				nf.log.Warnf("Entry added position %d in serie %s since nmon start: skipped COLUMNS [%#+v] Line [%s]", i+1, name, nf.DataSeries[name], line)
+			if len(nf.Sections[name].Columns) < i+1 {
+				nf.log.Warnf("Entry added position %d in serie %s since nmon start: skipped COLUMNS [%#+v] Line [%s]", i+1, name, nf.Sections[name], line)
 				continue
 			}
-			tag := strings.ToLower(nf.DataSeries[name].Columns[i])
+			tag := strings.ToLower(nf.Sections[name].Columns[i])
 			// try to convert string to integer
 			converted, parseErr := strconv.ParseFloat(value, 64)
 			if parseErr != nil || math.IsNaN(converted) {
@@ -523,8 +523,8 @@ func (nf *NmonFile) processColumnAsField(pa *pointarray.PointArray, Tags map[str
 		fields := make(map[string]interface{})
 
 		for i, value := range elems[2:] {
-			if len(nf.DataSeries[name].Columns) < i+1 {
-				nf.log.Warnf("Entry added position %d in serie %s since nmon start: skipped COLUMNS [%#+v] Line [%s]", i+1, name, nf.DataSeries[name], line)
+			if len(nf.Sections[name].Columns) < i+1 {
+				nf.log.Warnf("Entry added position %d in serie %s since nmon start: skipped COLUMNS [%#+v] Line [%s]", i+1, name, nf.Sections[name], line)
 				continue
 			}
 
@@ -536,7 +536,7 @@ func (nf *NmonFile) processColumnAsField(pa *pointarray.PointArray, Tags map[str
 				//if not working, skip to next value. We don't want text values in InfluxDB.
 				continue
 			}
-			column := nf.DataSeries[name].Columns[i]
+			column := nf.Sections[name].Columns[i]
 			fields[column] = converted
 
 		}

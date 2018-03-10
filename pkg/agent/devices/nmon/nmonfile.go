@@ -27,8 +27,8 @@ var skipRegexp = regexp.MustCompile(`T0+\W|^Z|^TOP.%CPU`)
 
 var delimiterRegexp = regexp.MustCompile(`^\w+(.)`)
 
-// DataSerie data
-type DataSerie struct {
+// NmonSection data
+type NmonSection struct {
 	Columns []string
 }
 
@@ -42,8 +42,8 @@ type NmonFile struct {
 	//Hostname     string <-not really needed
 	//OS           string <-not really needed
 	//Serial       string <-not really needed
-	TextContent  string
-	DataSeries   map[string]DataSerie
+	TextContent  []string
+	Sections     map[string]NmonSection
 	sftpConn     *sftp.Client
 	HostName     string
 	PendingLines []string
@@ -58,7 +58,7 @@ func NewNmonFile(sftp *sftp.Client, l *logrus.Logger, pattern string, host strin
 
 // AppendText add text section to dashboard
 func (nf *NmonFile) AppendText(text string) {
-	nf.TextContent += text
+	nf.TextContent = append(nf.TextContent, text)
 }
 
 // => l
@@ -143,12 +143,12 @@ func (nf *NmonFile) AddNmonSection(line string) bool {
 	name := elems[0]
 
 	nf.log.Debugf("Adding Section %s\n", name)
-	dataserie := nf.DataSeries[name]
+	dataserie := nf.Sections[name]
 	//dataserie.Columns = elems[2:]
 	for _, v := range elems[2:] {
 		dataserie.Columns = append(dataserie.Columns, sanitize(v))
 	}
-	nf.DataSeries[name] = dataserie
+	nf.Sections[name] = dataserie
 	return true
 }
 
@@ -166,7 +166,7 @@ func sanitize(in string) string {
 // InitSectionDefs Initialize section definitions.
 func (nf *NmonFile) InitSectionDefs() (int64, error) {
 	//Map init
-	nf.DataSeries = make(map[string]DataSerie)
+	nf.Sections = make(map[string]NmonSection)
 	// Get Content
 	data, pos, err := nf.File.ContentUntilMatch(timeRegexp)
 	if err != nil {
@@ -311,6 +311,7 @@ func (nf *NmonFile) convertTimeStamp(s string) (time.Time, error) {
 func (nf *NmonFile) ResetPending() {
 	nf.log.Debugf("ResetPending:Reseting current Buffer containing (%d) lines [%+v]", len(nf.PendingLines), nf.PendingLines)
 	nf.PendingLines = []string{}
+	nf.TextContent = []string{}
 }
 
 // ProcessPending process last
@@ -375,7 +376,7 @@ func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]stri
 	for _, line := range lines {
 		//check if exit header to process data
 		header := strings.Split(line, nf.Delimiter)[0]
-		if _, ok := nf.DataSeries[header]; !ok {
+		if _, ok := nf.Sections[header]; !ok {
 			nf.log.Infof("ProcessChunk: Line  not in Header [%s] trying to add...", line)
 			// if not perhaps is a new header
 			if nf.AddNmonSection(line) == true {

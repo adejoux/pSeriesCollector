@@ -27,7 +27,7 @@ func (d *Server) ImportData(points *pointarray.PointArray) error {
 			d.NmonFile.SetPosition(info.LastPosition)
 			d.Infof("ImportData: Updated File Position %s now to: %d", d.NmonFile.CurFile, info.LastPosition)
 		}
-		d.Debugf("ImportData: Found Dataseries: %#+v", d.NmonFile.DataSeries)
+		d.Debugf("ImportData: Found Sections: %#+v", d.NmonFile.Sections)
 		d.Debugf("ImportData: Found Content %s", d.NmonFile.TextContent)
 	}
 
