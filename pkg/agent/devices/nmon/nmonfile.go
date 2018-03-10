@@ -29,7 +29,8 @@ var delimiterRegexp = regexp.MustCompile(`^\w+(.)`)
 
 // NmonSection data
 type NmonSection struct {
-	Columns []string
+	Description string
+	Columns     []string
 }
 
 // NmonFile type for remote NmonFiles
@@ -141,14 +142,15 @@ func (nf *NmonFile) AddNmonSection(line string) bool {
 		return false
 	}
 	name := elems[0]
+	desc := elems[1]
 
-	nf.log.Debugf("Adding Section %s\n", name)
-	dataserie := nf.Sections[name]
-	//dataserie.Columns = elems[2:]
+	nf.log.Debugf("Adding Section [%s] - %s\n", name, desc)
+	sec := nf.Sections[name]
+	sec.Description = desc
 	for _, v := range elems[2:] {
-		dataserie.Columns = append(dataserie.Columns, sanitize(v))
+		sec.Columns = append(sec.Columns, sanitize(v))
 	}
-	nf.Sections[name] = dataserie
+	nf.Sections[name] = sec
 	return true
 }
 
