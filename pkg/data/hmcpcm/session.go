@@ -283,6 +283,7 @@ func (s *Session) GetManagedSystems() (feed *Feed, err error) {
 			lpe, err := s.GetLparInfo(link.Href)
 			if err != nil {
 				s.Errorf("Error on get LPAR info for link [%s] error: %s ", link, err)
+				continue
 			}
 			s.Debugf("LPAR : %+v", lpe)
 			entry.Contents[0].System[0].Lpars[lpe.PartitionUUID] = lpe
@@ -291,6 +292,7 @@ func (s *Session) GetManagedSystems() (feed *Feed, err error) {
 			lpe, err := s.GetViosInfo(link.Href)
 			if err != nil {
 				s.Errorf("Error on get LPAR info for link [%s] error: %s ", link, err)
+				continue
 			}
 			s.Debugf("VIOS : %+v", lpe)
 			entry.Contents[0].System[0].Vios[lpe.PartitionUUID] = lpe
