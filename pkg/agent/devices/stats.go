@@ -142,8 +142,8 @@ func (s *DevStat) ThSafeCopy() *DevStat {
 func (s *DevStat) Send() {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	s.log.Infof("STATS HMC :  polling took [%f seconds] ", s.Counters[CycleGatherDuration])
-	s.log.Infof("STATS HMC: last scan send took [%f seconds]", s.Counters[ScanDuration])
+	s.log.Infof("STATS Device :  polling took [%f seconds] ", s.Counters[CycleGatherDuration])
+	s.log.Infof("STATS Device: last scan send took [%f seconds]", s.Counters[ScanDuration])
 	s.log.Infof("STATS INFLUX: influx send took [%f seconds]", s.Counters[BackEndSentDuration])
 
 	if s.selfmon != nil {

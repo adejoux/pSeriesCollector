@@ -414,7 +414,7 @@ func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]stri
 		//Filter Not In Time data
 		remain, linesnotok = utils.Grep(remain, regexp.MustCompile(`\W`+timeID))
 		if len(linesnotok) > 0 {
-			nf.log.Warning("ProcessChunk: Lines not in time  TIMEID [%s] : Lines :[%+v]", timeID, linesnotok)
+			nf.log.Warnf("ProcessChunk: Lines not in time  TIMEID [%s] : Lines :[%+v]", timeID, linesnotok)
 		}
 		//-----------------------------------------------------------------------------
 		// We will only process , format and send measurements from known Nmon Seccions
