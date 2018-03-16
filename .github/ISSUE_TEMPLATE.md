@@ -1,7 +1,6 @@
 Read before posting:
 
 - Please search here on GitHub for similar issues before creating a new issue.
-- Please review Documentation https://github.com/toni-moreno/resitor/wiki before creating a new issue.
 
 Please prefix your title with [Bug] or [Feature request].
 
@@ -12,7 +11,7 @@ Please include this information:
 - What was the expected result?
 - What happened instead?
 - If related with process panics.
-  - Include the related log files .(pseriescollector.log `<deviceid>.log`)
+  - Include the related log files .(pseriescollector.log `<deviceid>.log` and hmcapi_debug_<hmcid>.log if needed)
 - If related with configuration issues.
   - Include all  related configuration data ( and export file, a webui screenshot or writted by hand if you prefer)
 - If webui seems to be freezed , :
