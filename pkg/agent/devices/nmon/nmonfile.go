@@ -23,8 +23,6 @@ var intervalRegexp = regexp.MustCompile(`^AAA.interval.(\d+)`)
 var headerRegexp = regexp.MustCompile(`^AAA|^BBB|^UARG|\WT\d{4,16}`)
 var infoRegexp = regexp.MustCompile(`^AAA.(.*)`)
 
-var skipRegexp = regexp.MustCompile(`T0+\W|^Z|^TOP.%CPU`)
-
 var delimiterRegexp = regexp.MustCompile(`^\w+(.)`)
 
 // NmonSection data
@@ -165,86 +163,98 @@ func sanitize(in string) string {
 	return strings.TrimSpace(in)
 }
 
+const maxInitSectionTimes = 20
+
 // InitSectionDefs Initialize section definitions.
 func (nf *NmonFile) InitSectionDefs() (int64, error) {
 	//Map init
 	nf.Sections = make(map[string]NmonSection)
-	// Get Content
-	data, pos, err := nf.File.ContentUntilMatch(timeRegexp)
-	if err != nil {
-		return 0, err
-	}
-	nf.log.Infof("InitSectionDefs: Initialice NMONFILE:  %s | Section Header length: (%d) ", nf.CurFile, len(data))
+	// Get Content as many  times as needed until a ZZZZ section found
+	loopcontrol := 0
+	for {
+		data, pos, err := nf.File.ContentUntilMatch(timeRegexp)
+		if err != nil {
+			return 0, err
+		}
+		nf.log.Infof("InitSectionDefs: Initialice NMONFILE:  %s | Section Header length: (%d) ", nf.CurFile, len(data))
 
-	first := true
+		first := true
 
-	// PENDING : add a way to skip some metrics
-	last := 0
-	for k, line := range data {
-		//var badRegexp *regexp.Regexp
-		//Look for Nmon Delimiter
+		for k, line := range data {
+			//var badRegexp *regexp.Regexp
+			//Look for Nmon Delimiter
 
-		if first {
-			if delimiterRegexp.MatchString(line) {
-				matched := delimiterRegexp.FindStringSubmatch(line)
-				nf.Delimiter = matched[1]
-			} else {
-				nf.Delimiter = ","
+			if first {
+				if delimiterRegexp.MatchString(line) {
+					matched := delimiterRegexp.FindStringSubmatch(line)
+					nf.Delimiter = matched[1]
+				} else {
+					nf.Delimiter = ","
+				}
+				nf.log.Debugf("InitSectionDefs: NMONFILE DELIMITER SET: [%s]", nf.Delimiter)
+
+				first = false
 			}
-			nf.log.Debugf("InitSectionDefs: NMONFILE DELIMITER SET: [%s]", nf.Delimiter)
+			// replace data if needed depending on the delimiter
+			if nf.Delimiter == ";" {
+				line = strings.Replace(line, ",", ".", -1)
+				data[k] = line
+			}
+			//begin data check
+			nf.log.Debugf("InitSectionDefs:NMONFILE(%d): %s", k, line)
 
-			first = false
+			//if time Line reached we will finish our header check but other headers could appear
+			if timeRegexp.MatchString(line) {
+				matched := timeRegexp.FindStringSubmatch(line)
+				nf.log.Debugf("InitSectionDefs: Found Time ID [%s] :  %s", matched[1], matched[2])
+				//nf.TimeStamps[matched[1]] = matched[2]
+				// from now all lines will have data to
+
+				nf.PendingLines = append(nf.PendingLines, data[k:]...)
+				return pos, nil
+				//break
+			}
+
+			/* while not really needed we will disable these data
+			if hostRegexp.MatchString(line) {
+				matched := hostRegexp.FindStringSubmatch(line)
+				nf.Hostname = strings.ToLower(matched[1])
+				continue
+			}
+
+			if serialRegexp.MatchString(line) {
+				matched := serialRegexp.FindStringSubmatch(line)
+				nf.Serial = strings.ToLower(matched[1])
+				continue
+			}
+
+			if osRegexp.MatchString(line) {
+				matched := osRegexp.FindStringSubmatch(line)
+				nf.OS = strings.ToLower(matched[1])
+				continue
+			}*/
+
+			if infoRegexp.MatchString(line) {
+				matched := infoRegexp.FindStringSubmatch(line)
+				nf.AppendText(matched[1])
+				continue
+			}
+			nf.AddNmonSection(line)
+
 		}
-		// replace data if needed depending on the delimiter
-		if nf.Delimiter == ";" {
-			line = strings.Replace(line, ",", ".", -1)
-			data[k] = line
+
+		nf.log.Warnf("Any ZZZZ section found on (%d) lines of the file ", len(data))
+		// this sleep prevents for and infinite loop while waiting for nmon process
+		// finish the header part of the nmon file.
+		// is a workarround until I can think of something better
+		loopcontrol++
+		if loopcontrol > maxInitSectionTimes {
+
+			return 0, fmt.Errorf("Too many times trying to read the file and  looking for an ZZZZ section, aborting.... ")
 		}
-		//begin data check
-		nf.log.Debugf("InitSectionDefs:NMONFILE(%d): %s", k, line)
-
-		//if time Line reached we will finish our header check but other headers could appear
-		if timeRegexp.MatchString(line) {
-			matched := timeRegexp.FindStringSubmatch(line)
-			nf.log.Debugf("InitSectionDefs: Found Time ID [%s] :  %s", matched[1], matched[2])
-			//nf.TimeStamps[matched[1]] = matched[2]
-			// from now all lines will have data to
-			last = k
-			break
-		}
-
-		/* while not really needed we will disable these data
-		if hostRegexp.MatchString(line) {
-			matched := hostRegexp.FindStringSubmatch(line)
-			nf.Hostname = strings.ToLower(matched[1])
-			continue
-		}
-
-		if serialRegexp.MatchString(line) {
-			matched := serialRegexp.FindStringSubmatch(line)
-			nf.Serial = strings.ToLower(matched[1])
-			continue
-		}
-
-		if osRegexp.MatchString(line) {
-			matched := osRegexp.FindStringSubmatch(line)
-			nf.OS = strings.ToLower(matched[1])
-			continue
-		}*/
-
-		if infoRegexp.MatchString(line) {
-			matched := infoRegexp.FindStringSubmatch(line)
-			nf.AppendText(matched[1])
-			continue
-		}
-		nf.AddNmonSection(line)
-
+		time.Sleep(time.Duration(5 * time.Second))
 	}
-	// a time  ZZZZ section has been reached on line
 
-	nf.PendingLines = append(nf.PendingLines, data[last:]...)
-
-	return pos, nil
 }
 
 // Init Initialize NmonFile struct return current position after initialized
@@ -313,6 +323,11 @@ func (nf *NmonFile) convertTimeStamp(s string) (time.Time, error) {
 func (nf *NmonFile) ResetPending() {
 	nf.log.Debugf("ResetPending:Reseting current Buffer containing (%d) lines [%+v]", len(nf.PendingLines), nf.PendingLines)
 	nf.PendingLines = []string{}
+}
+
+//ResetText remove buffered data
+func (nf *NmonFile) ResetText() {
+	nf.log.Debugf("ResetText:Reseting current Text Buffer containing (%d) ", len(nf.TextContent))
 	nf.TextContent = []string{}
 }
 
@@ -321,6 +336,11 @@ func (nf *NmonFile) ProcessPending(points *pointarray.PointArray, tags map[strin
 	var tsID string
 	var ts string
 	nf.log.Debug("ProcessPending: Init")
+
+	if len(nf.PendingLines) == 0 {
+		nf.log.Warnf("nothing to process in the process pending buffer")
+		return
+	}
 
 	//do while  no more ZZZ section  found
 	for {
@@ -370,6 +390,8 @@ func (nf *NmonFile) ProcessPending(points *pointarray.PointArray, tags map[strin
 
 }
 
+var skipRegexp = regexp.MustCompile(`T0+\W|^Z|^TOP.%CPU`)
+
 // ProcessChunk process a
 func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]string, t time.Time, timeID string, lines []string) {
 	nf.log.Infof("ProcessChunk: Decoding Chunk for Timestamp %s  with %d Elements ", t.String(), len(lines))
@@ -409,8 +431,10 @@ func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]stri
 			//exit from the loop if any other line pending to  process.
 			break
 		}
-		//Filter All HardCoded
+		//Filter HardCoded SkipSections
 		_, remain = utils.Grep(remain, skipRegexp)
+		//Filter HardCoded HeaderSections
+		remain, _ = utils.Grep(remain, headerRegexp)
 		//Filter Not In Time data
 		remain, linesnotok = utils.Grep(remain, regexp.MustCompile(`\W`+timeID))
 		if len(linesnotok) > 0 {
