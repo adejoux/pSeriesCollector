@@ -439,3 +439,127 @@ func (d *HMCServer) ImportData(points *pointarray.PointArray) error {
 	}
 	return nil
 }
+
+//ImportsMData is the entry point for subcommand hmc
+func (d *HMCServer) ImportSMData(points *pointarray.PointArray, system *hmcpcm.ManagedSystem) error {
+
+	//Check if this system exist in the device catalog and
+	devcfg, err := db.GetDeviceCfgByID(system.UUID)
+	if err != nil {
+		d.Warnf("Any Device in the DB with this name/uuid for SM [%s] - [%s]", system.SystemName, system.UUID)
+		return err
+	}
+	if devcfg.EnableHMCStats == false {
+		d.Infof("Skeeping Data Importation for Disabled SM [%s] - [%s]", system.SystemName, system.UUID)
+		return nil
+	}
+
+	//Getting custom Tags for SM
+	Tags := utils.MapDupAndAdd(d.TagMap, map[string]string{"system": system.SystemName})
+
+	SMTags, err := utils.KeyValArrayToMap(devcfg.ExtraTags)
+	if err != nil {
+		d.Warnf("Warning on Device  %s Tag gathering: %s", err)
+	}
+	utils.MapAdd(Tags, SMTags)
+
+	//Init SM Data Gathering
+
+	d.Infof("| SYSTEM [%s] | Init data gathering for SM ...", system.SystemName)
+
+	// Get Managed System PCM metrics
+	data, dataerr := d.Session.GetSysPCMData(system)
+	if dataerr != nil {
+		d.Errorf("Error geting PCM data: %s", dataerr)
+		return dataerr
+	}
+
+	d.Infof("| SYSTEM [%s]  | Processing %d samples ", system.SystemName, len(data.SystemUtil.UtilSamples))
+
+	for _, sample := range data.SystemUtil.UtilSamples {
+		timestamp, timeerr := time.Parse(timeFormat, sample.SampleInfo.TimeStamp)
+		if timeerr != nil {
+			d.Errorf("| SYSTEM [%s] | Error on sample timestamp formating ERROR:%s", system.SystemName, timeerr)
+			continue
+		}
+
+		switch sample.SampleInfo.Status {
+		case 1:
+			// if sample sample.SampleInfo.Statusstatus equal 1 we have no data in this sample
+			d.Infof(" | SYSTEM [%s] | Skipping sample. Error in sample collection: %s", system.SystemName, sample.SampleInfo.ErrorInfo[0].ErrMsg)
+			continue
+		case 2:
+			// if sample sample.SampleInfo.Statusstatus equal 2 there is some error message but could continue
+			d.Warnf(" | SYSTEM [%s] | SAMPLE Status 2: %s", system.SystemName, sample.SampleInfo.ErrorInfo[0].ErrMsg)
+		}
+
+		//ServerUtil
+		d.GenerateServerMeasurements(points, Tags, timestamp, sample.ServerUtil)
+
+		//ViosUtil
+		d.GenerateViosMeasurements(points, Tags, timestamp, sample.ViosUtil)
+
+	}
+
+	if d.ManagedSystemOnly {
+		return nil
+	}
+
+	for _, lpar := range system.Lpars {
+
+		//Check if this system exist in the device catalog and
+		devcfg, err := db.GetDeviceCfgByID(lpar.PartitionUUID)
+		if err != nil {
+			d.Warnf("Any Device in the DB with this name/uuid for LPAR [%s] - [%s]", lpar.PartitionName, lpar.PartitionUUID)
+			continue
+		}
+		if devcfg.EnableHMCStats == false {
+			d.Infof("Skeeping Data Importation for Disabled LPAR [%s] - [%s]", lpar.PartitionName, lpar.PartitionUUID)
+			continue
+		}
+
+		LparTags, err := utils.KeyValArrayToMap(devcfg.ExtraTags)
+		if err != nil {
+			d.Warnf("Warning on Device  %s Tag gathering: %s", err)
+		}
+		utils.MapAdd(Tags, LparTags)
+
+		//Init SM Data Gathering
+
+		d.Infof("| SYSTEM [%s] | LPAR [%s] | Init LPAR gathering", system.SystemName, lpar.PartitionName)
+		//need to parse the link because the specified hostname can be different
+		//of the one specified by the user and the auth cookie will not match
+
+		lparData, lparErr := d.Session.GetLparPCMData(system, lpar)
+
+		if lparErr != nil {
+			d.Errorf(" | SYSTEM [%s] | LPAR [%s] | Error geting PCM data: %s", system.SystemName, lpar.PartitionName, lparErr)
+			continue
+		}
+
+		for _, sample := range lparData.SystemUtil.UtilSamples {
+
+			switch sample.SampleInfo.Status {
+			case 1:
+				// if sample sample.SampleInfo.Statusstatus equal 1 we have no data in this sample
+				d.Infof("| SYSTEM [%s] | LPAR [%s] | Skipping sample. Error in sample collection: %s\n", system.SystemName, lpar.PartitionName, sample.SampleInfo.ErrorInfo[0].ErrMsg)
+				continue
+			case 2:
+				// if sample sample.SampleInfo.Statusstatus equal 2 there is some error message but could continue
+				d.Warnf("| SYSTEM [%s] | LPAR [%s] | SAMPLE Status 2: %s", system.SystemName, lpar.PartitionName, sample.SampleInfo.ErrorInfo[0].ErrMsg)
+			}
+
+			timestamp, timeerr := time.Parse(timeFormat, sample.SampleInfo.TimeStamp)
+			if timeerr != nil {
+				d.Errorf("| SYSTEM [%s] | LPAR [%s] | Error on sample timestamp formating ERROR:%s", system.SystemName, lpar.PartitionName, timeerr)
+				continue
+			}
+
+			//LparUtil
+			d.GenerateLparMeasurements(points, Tags, timestamp, sample.LparsUtil)
+		}
+
+	}
+
+	return nil
+}

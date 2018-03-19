@@ -3,6 +3,7 @@ package hmc
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -129,36 +130,53 @@ func (d *HMCServer) setProtocolDebug(debug bool) {
 // GetHMCData get data from HMC
 func (d *HMCServer) GetHMCData() {
 
-	bpts, _ := d.Influx.BP()
-	startStats := time.Now()
-
-	points := pointarray.New(d.GetLogger(), bpts)
-	//prepare batchpoint
-	err := d.ImportData(points)
-	if err != nil {
-		d.Errorf("Error in  import Data to HMC %s: ERROR: %s", d.cfg.ID, err)
+	if d.System == nil {
+		d.Errorf("Any Scanned SM/LPAR devices detected")
 		return
 	}
-	points.Flush()
+
+	startStats := time.Now()
+	var wg sync.WaitGroup
+	for sysid, m := range d.System {
+		d.Infof("Beginning the gathering process for the Managed system: [%s],[%s] ", sysid, m.SystemName)
+		wg.Add(1)
+		go func(d *HMCServer, m *hmcpcm.ManagedSystem) {
+			defer wg.Done()
+
+			bpts, _ := d.Influx.BP()
+
+			points := pointarray.New(d.GetLogger(), bpts)
+			//prepare batchpoint
+			err := d.ImportSMData(points, m)
+			if err != nil {
+				d.Errorf("Error in  import Data to HMC %s: ERROR: %s", d.cfg.ID, err)
+				return
+			}
+			points.Flush()
+
+			/*************************
+			 *
+			 * Send data to InfluxDB process
+			 *
+			 ***************************/
+
+			startInfluxStats := time.Now()
+			if bpts != nil {
+				d.Influx.Send(bpts)
+			} else {
+				d.Warnf("Can not send data to the output DB becaouse of batchpoint creation error")
+			}
+			elapsedInfluxStats := time.Since(startInfluxStats)
+			d.RtStats.AddSentDuration(startInfluxStats, elapsedInfluxStats)
+			d.RtStats.AddMeasStats(points.MetSent, points.MetError, points.MeasSent, points.MeasError)
+		}(d, m)
+	}
+	wg.Wait()
+
 	elapsedStats := time.Since(startStats)
 
 	d.RtStats.SetGatherDuration(startStats, elapsedStats)
-	d.RtStats.AddMeasStats(points.MetSent, points.MetError, points.MeasSent, points.MeasError)
 
-	/*************************
-	 *
-	 * Send data to InfluxDB process
-	 *
-	 ***************************/
-
-	startInfluxStats := time.Now()
-	if bpts != nil {
-		d.Influx.Send(bpts)
-	} else {
-		d.Warnf("Can not send data to the output DB becaouse of batchpoint creation error")
-	}
-	elapsedInfluxStats := time.Since(startInfluxStats)
-	d.RtStats.AddSentDuration(startInfluxStats, elapsedInfluxStats)
 }
 
 /*
