@@ -46,6 +46,9 @@ func (rf *File) Init() {
 
 // End close RemoteFile
 func (rf *File) End() error {
+	if rf.reader == nil {
+		return fmt.Errorf("Trying to close reader without open reader")
+	}
 	rf.reader.Close()
 	return nil
 }
@@ -83,6 +86,7 @@ func (rf *File) Content() ([]string, int64) {
 	for {
 		line, _, err := rf.reader.ReadLine()
 		if err != nil {
+			rf.log.Debugf("An error happened on reader.ReadLine(). Err: %s", err)
 			break
 		}
 		lines = append(lines, string(line))
@@ -105,6 +109,7 @@ func (rf *File) ContentUntilMatch(regex *regexp.Regexp) ([]string, int64, error)
 	for {
 		line, _, err := rf.reader.ReadLine()
 		if err != nil {
+			rf.log.Debugf("An error happened on reader.ReadLine(). Err: %s", err)
 			break
 		}
 
@@ -123,5 +128,8 @@ func (rf *File) ContentUntilMatch(regex *regexp.Regexp) ([]string, int64, error)
 
 // SetPosition set file current position from the beggining
 func (rf *File) SetPosition(newpos int64) (int64, error) {
+	if rf.reader == nil {
+		return 0, fmt.Errorf("Trying to set position on file without an open reader")
+	}
 	return rf.reader.Seek(newpos, 0)
 }
