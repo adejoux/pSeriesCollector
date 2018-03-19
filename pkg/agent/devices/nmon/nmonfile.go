@@ -48,11 +48,12 @@ type NmonFile struct {
 	PendingLines []string
 	tzLocation   *time.Location
 	LastTime     time.Time
+	RotateDelay  int
 }
 
 // NewNmonFile create a NmonFile , Hostname needed to Parse pattern
-func NewNmonFile(sftp *sftp.Client, l *logrus.Logger, pattern string, host string) *NmonFile {
-	return &NmonFile{log: l, FilePattern: pattern, sftpConn: sftp, HostName: host}
+func NewNmonFile(sftp *sftp.Client, l *logrus.Logger, pattern string, host string, delay int) *NmonFile {
+	return &NmonFile{log: l, FilePattern: pattern, sftpConn: sftp, HostName: host, RotateDelay: delay}
 }
 
 // AppendText add text section to dashboard
@@ -64,8 +65,11 @@ func (nf *NmonFile) AppendText(text string) {
 func (nf *NmonFile) filePathCheck() bool {
 	pattern := nf.FilePattern
 	t := time.Now()
-	year, month, day := t.Date()
-	hour, min, sec := t.Clock()
+	nf.log.Debugf("Current Time: %s", t.String())
+	then := t.Add(time.Duration(nf.RotateDelay) * time.Second * -1)
+	nf.log.Debugf("Time 1 period ago: %s", then.String())
+	year, month, day := then.Date()
+	hour, min, sec := then.Clock()
 	yearstr := strconv.Itoa(year)
 	//  /var/log/nmon/%{hostname}_%Y%m%d_%H%M.nmon => (/var/log/nmon/fooserver_20180305_1938.nmon )
 	pattern = strings.Replace(pattern, "%{hostname}", strings.ToLower(nf.HostName), -1)
