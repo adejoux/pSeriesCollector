@@ -467,7 +467,7 @@ func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]stri
 		// PAGING Stats
 		linesok, remain = utils.Grep(remain, pagingRegexp)
 		if len(linesok) > 0 {
-			nf.processColumnAsTags(pa, Tags, t, linesok, "paging", "psname", pagingRegexp)
+			nf.processColumnAsTags(pa, Tags, t, linesok, "nmonPaging", "psname", pagingRegexp)
 		}
 		if len(remain) == 0 {
 			break
@@ -475,7 +475,7 @@ func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]stri
 		// DISK Stats
 		linesok, remain = utils.Grep(remain, diskRegexp)
 		if len(linesok) > 0 {
-			nf.processColumnAsTags(pa, Tags, t, linesok, "disks", "diskname", diskRegexp)
+			nf.processColumnAsTags(pa, Tags, t, linesok, "nmonDisks", "diskname", diskRegexp)
 		}
 		if len(remain) == 0 {
 			break
@@ -483,7 +483,7 @@ func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]stri
 		// VG Stats
 		linesok, remain = utils.Grep(remain, vgRegexp)
 		if len(linesok) > 0 {
-			nf.processColumnAsTags(pa, Tags, t, linesok, "volumegroup", "vgname", vgRegexp)
+			nf.processColumnAsTags(pa, Tags, t, linesok, "nmonVolumegroup", "vgname", vgRegexp)
 		}
 		if len(remain) == 0 {
 			break
@@ -491,7 +491,7 @@ func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]stri
 		// JFS Stats
 		linesok, remain = utils.Grep(remain, jfsRegexp)
 		if len(linesok) > 0 {
-			nf.processColumnAsTags(pa, Tags, t, linesok, "jfs", "fsname", jfsRegexp)
+			nf.processColumnAsTags(pa, Tags, t, linesok, "nmonJfs", "fsname", jfsRegexp)
 		}
 		if len(remain) == 0 {
 			break
@@ -499,7 +499,7 @@ func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]stri
 		// FC Stats
 		linesok, remain = utils.Grep(remain, fcRegexp)
 		if len(linesok) > 0 {
-			nf.processColumnAsTags(pa, Tags, t, linesok, "fiberchannel", "fcname", fcRegexp)
+			nf.processColumnAsTags(pa, Tags, t, linesok, "nmonFiberchannel", "fcname", fcRegexp)
 		}
 		if len(remain) == 0 {
 			break
@@ -507,7 +507,7 @@ func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]stri
 		// DG Stats
 		linesok, remain = utils.Grep(remain, dgRegexp)
 		if len(linesok) > 0 {
-			nf.processColumnAsTags(pa, Tags, t, linesok, "diskgroup", "dgname", dgRegexp)
+			nf.processColumnAsTags(pa, Tags, t, linesok, "nmonDiskgroup", "dgname", dgRegexp)
 		}
 		if len(remain) == 0 {
 			break
@@ -515,7 +515,7 @@ func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]stri
 		//NET stats
 		linesok, remain = utils.Grep(remain, netRegexp)
 		if len(linesok) > 0 {
-			nf.processMixedColumnAsFieldAndTags(pa, Tags, t, linesok, "network", "ifname")
+			nf.processMixedColumnAsFieldAndTags(pa, Tags, t, linesok, "nmonNetwork", "ifname", regexp.MustCompile(`^(br-[^_-]*|[^_-]*)[_-]{1}(.*)`))
 		}
 		if len(remain) == 0 {
 			break
@@ -523,7 +523,7 @@ func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]stri
 		//SEA stats
 		linesok, remain = utils.Grep(remain, seaRegexp)
 		if len(linesok) > 0 {
-			nf.processMixedColumnAsFieldAndTags(pa, Tags, t, linesok, "sea", "seaname")
+			nf.processMixedColumnAsFieldAndTags(pa, Tags, t, linesok, "nmonSea", "seaname", nil)
 		}
 		if len(remain) == 0 {
 			break
@@ -531,7 +531,7 @@ func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]stri
 		//IOADAPT stats
 		linesok, remain = utils.Grep(remain, ioadaptRegexp)
 		if len(linesok) > 0 {
-			nf.processMixedColumnAsFieldAndTags(pa, Tags, t, linesok, "ioadapt", "adaptname")
+			nf.processMixedColumnAsFieldAndTags(pa, Tags, t, linesok, "nmonIoadapt", "adaptname", nil)
 		}
 		if len(remain) == 0 {
 			break

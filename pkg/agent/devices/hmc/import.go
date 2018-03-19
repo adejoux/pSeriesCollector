@@ -22,7 +22,7 @@ func (d *HMCServer) GenerateServerMeasurements(pa *pointarray.PointArray, Tags m
 		"configurableProcUnits": s.Processor.ConfigurableProcUnits[0],
 	}
 
-	pa.Append("SystemProcessor", Tags, fieldproc, t)
+	pa.Append("hmcSystemProcessor", Tags, fieldproc, t)
 
 	fieldmem := map[string]interface{}{
 		"totalMem":           s.Memory.TotalMem[0],
@@ -31,7 +31,7 @@ func (d *HMCServer) GenerateServerMeasurements(pa *pointarray.PointArray, Tags m
 		"configurableMem":    s.Memory.ConfigurableMem[0],
 	}
 
-	pa.Append("SystemMemory", Tags, fieldmem, t)
+	pa.Append("hmcSystemMemory", Tags, fieldmem, t)
 
 	for _, spp := range s.SharedProcessorPool {
 
@@ -43,7 +43,7 @@ func (d *HMCServer) GenerateServerMeasurements(pa *pointarray.PointArray, Tags m
 			"availableProcUnits": spp.AvailableProcUnits[0],
 		}
 
-		pa.Append("SystemSharedProcessorPool", SppTags, fields, t)
+		pa.Append("hmcSystemSharedProcessorPool", SppTags, fields, t)
 
 	}
 }
@@ -85,7 +85,7 @@ func (d *HMCServer) GenerateViosMeasurements(pa *pointarray.PointArray, Tags map
 				"writeBytes":       scsi.WriteBytes[0],
 			}
 
-			pa.Append("SystemgenericPhysicalAdapters", ScsiTags, fields, t)
+			pa.Append("hmcSystemgenericPhysicalAdapters", ScsiTags, fields, t)
 
 		}
 		for _, fc := range vios.Storage.FiberChannelAdapters {
@@ -102,7 +102,7 @@ func (d *HMCServer) GenerateViosMeasurements(pa *pointarray.PointArray, Tags map
 			if len(fc.TransmittedBytes) > 0 {
 				fields["transmittedBytes"] = fc.TransmittedBytes[0]
 			}
-			pa.Append("SystemFiberChannelAdapters", FcTags, fields, t)
+			pa.Append("hmcSystemFiberChannelAdapters", FcTags, fields, t)
 
 		}
 		for _, vscsi := range vios.Storage.GenericVirtualAdapters {
@@ -119,7 +119,7 @@ func (d *HMCServer) GenerateViosMeasurements(pa *pointarray.PointArray, Tags map
 			if len(vscsi.TransmittedBytes) > 0 {
 				fields["transmittedBytes"] = vscsi.TransmittedBytes[0]
 			}
-			pa.Append("SystemGenericVirtualAdapters", VscsiTags, fields, t)
+			pa.Append("hmcSystemGenericVirtualAdapters", VscsiTags, fields, t)
 
 		}
 		for _, ssp := range vios.Storage.SharedStoragePools {
@@ -138,7 +138,7 @@ func (d *HMCServer) GenerateViosMeasurements(pa *pointarray.PointArray, Tags map
 			if len(ssp.TransmittedBytes) > 0 {
 				fields["transmittedBytes"] = ssp.TransmittedBytes[0]
 			}
-			pa.Append("SystemSharedStoragePool", SspTags, fields, t)
+			pa.Append("hmcSystemSharedStoragePool", SspTags, fields, t)
 
 		}
 		for _, net := range vios.Network.GenericAdapters {
@@ -156,7 +156,7 @@ func (d *HMCServer) GenerateViosMeasurements(pa *pointarray.PointArray, Tags map
 			if len(net.TransferredBytes) > 0 {
 				fields["transferredBytes"] = net.TransferredBytes[0]
 			}
-			pa.Append("SystemGenericAdapters", NetTags, fields, t)
+			pa.Append("hmcSystemGenericAdapters", NetTags, fields, t)
 
 		}
 
@@ -175,7 +175,7 @@ func (d *HMCServer) GenerateViosMeasurements(pa *pointarray.PointArray, Tags map
 			if len(net.TransferredBytes) > 0 {
 				fields["transferredBytes"] = net.TransferredBytes[0]
 			}
-			pa.Append("SystemSharedAdapters", NetTags, fields, t)
+			pa.Append("hmcSystemSharedAdapters", NetTags, fields, t)
 		}
 	}
 }
@@ -200,14 +200,14 @@ func (d *HMCServer) GenerateLparMeasurements(pa *pointarray.PointArray, Tags map
 			"timePerInstructionExecution": lpar.Processor.TimePerInstructionExecution[0],
 		}
 
-		pa.Append("PartitionProcessor", LparTags, fieldproc, t)
+		pa.Append("hmcPartitionProcessor", LparTags, fieldproc, t)
 
 		fieldmem := map[string]interface{}{
 			"logicalMem":        lpar.Memory.LogicalMem[0],
 			"backedPhysicalMem": lpar.Memory.BackedPhysicalMem[0],
 		}
 
-		pa.Append("PartitionMemory", LparTags, fieldmem, t)
+		pa.Append("hmcPartitionMemory", LparTags, fieldmem, t)
 
 		for _, vfc := range lpar.Storage.VirtualFiberChannelAdapters {
 
@@ -225,7 +225,7 @@ func (d *HMCServer) GenerateLparMeasurements(pa *pointarray.PointArray, Tags map
 				"writeBytes":       vfc.WriteBytes[0],
 			}
 
-			pa.Append("PartitionVirtualFiberChannelAdapters", FcaTags, fields, t)
+			pa.Append("hmcPartitionVirtualFiberChannelAdapters", FcaTags, fields, t)
 		}
 
 		for _, vscsi := range lpar.Storage.GenericVirtualAdapters {
@@ -243,7 +243,7 @@ func (d *HMCServer) GenerateLparMeasurements(pa *pointarray.PointArray, Tags map
 				"writeBytes":       vscsi.WriteBytes[0],
 			}
 
-			pa.Append("PartitionVSCSIAdapters", VscsiTags, fields, t)
+			pa.Append("hmcPartitionVSCSIAdapters", VscsiTags, fields, t)
 
 		}
 
@@ -271,7 +271,7 @@ func (d *HMCServer) GenerateLparMeasurements(pa *pointarray.PointArray, Tags map
 				"receivedPhysicalBytes":    net.ReceivedPhysicalBytes[0],
 			}
 
-			pa.Append("PartitionVirtualEthernetAdapters", NetTags, fields, t)
+			pa.Append("hmcPartitionVirtualEthernetAdapters", NetTags, fields, t)
 
 		}
 
@@ -292,7 +292,7 @@ func (d *HMCServer) GenerateLparMeasurements(pa *pointarray.PointArray, Tags map
 				"receivedBytes":   net.ReceivedBytes[0],
 			}
 
-			pa.Append("PartitionSriovLogicalPorts", NetTags, fields, t)
+			pa.Append("hmcPartitionSriovLogicalPorts", NetTags, fields, t)
 		}
 	}
 }

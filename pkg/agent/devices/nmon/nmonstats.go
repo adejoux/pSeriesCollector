@@ -54,7 +54,7 @@ func (nf *NmonFile) processCPUStats(pa *pointarray.PointArray, Tags map[string]s
 
 		}
 
-		pa.Append("cpu", tags, fields, t)
+		pa.Append("nmonCpu", tags, fields, t)
 	}
 
 }
@@ -118,7 +118,7 @@ func (nf *NmonFile) processMEMStats(pa *pointarray.PointArray, Tags map[string]s
 		}
 	}
 	//only one measurement  ( one write) is needed becouse of memnew/memuse/mem has diferent fields and any tag
-	pa.Append("memory", Tags, fields, t)
+	pa.Append("nmonMemory", Tags, fields, t)
 }
 
 // --------------------------------------------
@@ -172,7 +172,7 @@ func (nf *NmonFile) processTopStats(pa *pointarray.PointArray, Tags map[string]s
 			fields[column] = converted
 		}
 
-		pa.Append("top", tags, fields, t)
+		pa.Append("nmonTop", tags, fields, t)
 	}
 }
 
@@ -209,7 +209,7 @@ var ioadaptRegexp = regexp.MustCompile(`^IOADAPT([a-zA-Z]*).*`)
 
 //IOADAPT,Disk Adapter XXXXXX,sissas0_read-KB/s,sissas0_write-KB/s,sissas0_xfer-tps,sissas1_read-KB/s,sissas1_write-KB/s,sissas1_xfer-tps,fcs2_read-KB/s,fcs2_write-KB/s,fcs2_xfer-tps,fcs0_read-KB/s,fcs0_write-KB/s,fcs0_xfer-tps
 
-func (nf *NmonFile) processMixedColumnAsFieldAndTags(pa *pointarray.PointArray, Tags map[string]string, t time.Time, lines []string, measname string, tagname string) {
+func (nf *NmonFile) processMixedColumnAsFieldAndTags(pa *pointarray.PointArray, Tags map[string]string, t time.Time, lines []string, measname string, tagname string, tfregexp *regexp.Regexp) {
 	nf.log.Debugf("Processing ColumnAsTags  [%s][%s] stats: %+v", measname, tagname, lines)
 	//these kind of lines has fields codified in the Line Header, and also
 	// example:
@@ -225,6 +225,11 @@ func (nf *NmonFile) processMixedColumnAsFieldAndTags(pa *pointarray.PointArray, 
 	//https://stackoverflow.com/questions/43981224/docker-how-to-set-iface-name-when-creating-a-new-network
 
 	var tagfieldRegexp = regexp.MustCompile(`^([^_-]*)[_-]{1}(.*)`)
+
+	if tfregexp != nil {
+		//if set the regex could be outside this function
+		tagfieldRegexp = tfregexp
+	}
 
 	for _, line := range lines {
 		elems := strings.Split(line, nf.Delimiter)
@@ -548,7 +553,7 @@ func (nf *NmonFile) processColumnAsField(pa *pointarray.PointArray, Tags map[str
 			measurement = nameRegexp.ReplaceAllString(name, "")
 		}
 
-		pa.Append(strings.ToLower(measurement), Tags, fields, t)
+		pa.Append("nmon"+strings.Title(strings.ToLower(measurement)), Tags, fields, t)
 	}
 
 }
