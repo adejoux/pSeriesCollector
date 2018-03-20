@@ -124,6 +124,17 @@ func (e *ExportData) Export(ObjType string, id string, recursive bool, level int
 			break
 		}
 		e.Export("influxcfg", v.OutDB, recursive, level+1)
+	case "devicecfg":
+		//contains sensible data
+		v, err := dbc.GetDeviceCfgByID(id)
+		if err != nil {
+			return err
+		}
+		e.PrependObject(&ExportObject{ObjectTypeID: "devicecfg", ObjectID: id, ObjectCfg: v})
+		if !recursive {
+			break
+		}
+		e.Export("influxcfg", v.NmonOutDB, recursive, level+1)
 	case "influxcfg":
 		v, err := dbc.GetInfluxCfgByID(id)
 		if err != nil {

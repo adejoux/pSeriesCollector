@@ -59,6 +59,21 @@ func (e *ExportData) ImportCheck() (*ExportData, error) {
 				o.Error = fmt.Sprintf("Duplicated object %s in the database", o.ObjectID)
 				duplicated = append(duplicated, o)
 			}
+		case "devicecfg":
+			data := config.DeviceCfg{}
+			json.Unmarshal(raw, &data)
+			ers := binding.RawValidate(data)
+			if ers.Len() > 0 {
+				e, _ := json.Marshal(ers)
+				o.Error = string(e)
+				duplicated = append(duplicated, o)
+				break
+			}
+			_, err := dbc.GetDeviceCfgByID(o.ObjectID)
+			if err == nil {
+				o.Error = fmt.Sprintf("Duplicated object %s in the database", o.ObjectID)
+				duplicated = append(duplicated, o)
+			}
 
 		default:
 			return &ExportData{Info: e.Info, Objects: duplicated}, fmt.Errorf("Unknown type object type %s ", o.ObjectTypeID)
@@ -140,6 +155,30 @@ func (e *ExportData) Import(overwrite bool, autorename bool) error {
 			if err != nil {
 				return err
 			}
+
+		case "devicecfg":
+			log.Debugf("Importing devicecfg : %+v", o.ObjectCfg)
+			data := config.DeviceCfg{}
+			json.Unmarshal(raw, &data)
+			var err error
+			_, err = dbc.GetDeviceCfgByID(o.ObjectID)
+			if err == nil { //value exist already in the database
+				if overwrite == true {
+					_, err2 := dbc.UpdateDeviceCfg(o.ObjectID, data)
+					if err2 != nil {
+						return fmt.Errorf("Error on overwrite object [%s] %s : %s", o.ObjectTypeID, o.ObjectID, err2)
+					}
+					break
+				}
+			}
+			if autorename == true {
+				data.ID = data.ID + suffix
+			}
+			_, err = dbc.AddDeviceCfg(data)
+			if err != nil {
+				return err
+			}
+
 		default:
 			return fmt.Errorf("Unknown type object type %s ", o.ObjectTypeID)
 		}
