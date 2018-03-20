@@ -2,14 +2,15 @@ package devices
 
 import (
 	"fmt"
+	"os"
+	"sync"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/adejoux/pSeriesCollector/pkg/agent/bus"
 	"github.com/adejoux/pSeriesCollector/pkg/agent/output"
 	"github.com/adejoux/pSeriesCollector/pkg/agent/selfmon"
 	"github.com/adejoux/pSeriesCollector/pkg/data/utils"
-	"os"
-	"sync"
-	"time"
 )
 
 // Base the Base strut to do a gather procesing
@@ -164,6 +165,7 @@ func (b *Base) GetBaseStats() *DevStat {
 	stat.ReloadLoopsPending = b.ReloadLoopsPending
 
 	stat.NumMetrics = sum
+	stat.Type = b.Type
 
 	return stat
 }
