@@ -8,6 +8,7 @@ import { IMultiSelectOption, IMultiSelectSettings, IMultiSelectTexts } from '../
 //Services
 import { InfluxServerService } from '../../influxserver/influxservercfg.service';
 import { HMCServerService } from '../../hmcserver/hmcserver.service';
+import { DeviceCfgService } from '../../device/devicecfg.service';
 
 import { Subscription } from 'rxjs';
 
@@ -143,7 +144,7 @@ import { Subscription } from 'rxjs';
           </div>
         </div>`,
         styleUrls: ['./import-modal-styles.css'],
-        providers: [ExportServiceCfg, InfluxServerService, HMCServerService, TreeView]
+        providers: [ExportServiceCfg, InfluxServerService, HMCServerService, DeviceCfgService, TreeView]
 })
 
 export class ExportFileModal {
@@ -166,7 +167,7 @@ export class ExportFileModal {
   public exportForm: any;
   public mySubscriber: Subscription;
 
-  constructor(builder: FormBuilder, public exportServiceCfg : ExportServiceCfg,
+  constructor(builder: FormBuilder, public exportServiceCfg : ExportServiceCfg, public deviceCfgService : DeviceCfgService,
     public influxServerService: InfluxServerService, public hmcServerService: HMCServerService) {
 
     this.builder = builder;
@@ -189,7 +190,8 @@ export class ExportFileModal {
    //Single Object
   public colorsObject : Object = {
    "hmcservercfg" : 'danger',
-   "influxcfg" : 'info'
+   "influxcfg" : 'info',
+   "devicecfg" : 'success'
    };
 
   //Control to load exported result
@@ -218,6 +220,7 @@ export class ExportFileModal {
   public objectTypes : any = [
    {'Type':"hmcservercfg", 'Class' : 'danger', 'Visible': false},
    {'Type':"influxcfg" ,'Class' : 'info', 'Visible': false},
+   {'Type':"devicecfg" ,'Class' : 'success', 'Visible': false},
    ]
 
    //Reset Vars on Init
@@ -414,6 +417,20 @@ export class ExportFileModal {
       break;
       case 'influxcfg':
       this.mySubscriber = this.influxServerService.getInfluxServer(filter)
+       .subscribe(
+       data => {
+         this.dataArray=data;
+         this.resultArray = this.dataArray;
+         for (let i in this.dataArray[0]) {
+           this.listFilterProp.push({ 'id': i, 'name': i });
+         }
+       },
+       err => {console.log(err)},
+       () => {console.log("DONE")}
+       );
+      break;
+      case 'devicecfg':
+      this.mySubscriber = this.deviceCfgService.getDeviceCfg(filter)
        .subscribe(
        data => {
          this.dataArray=data;
