@@ -61,7 +61,7 @@
             <td *ngIf="showStatus==true " style="min-width: 170px ">
                 <label style="display: inline; margin-right: 2px " container=body [tooltip]=" 'View '+ row.ID " class="label label-primary glyphicon glyphicon-eye-open " (click)="viewItem(row) "></label>
                 <span style="border-right: 1px solid #1B809E; padding-right: 6px ">
-          <label style="display: inline; margin-right: 2px " container=body [tooltip]=" 'Test connection '+ row.ID " class="label label-primary glyphicon glyphicon glyphicon-flash " (click)="testConnection(row) "></label>
+          <!--label style="display: inline; margin-right: 2px " container=body [tooltip]=" 'Test connection '+ row.ID " class="label label-primary glyphicon glyphicon glyphicon-flash " (click)="testConnection(row) "></label-->
         </span>
                 <span style="padding-left: 12px ">
           <label style="display: inline; margin-right: 2px " container=body [tooltip]="row.DeviceActive ? 'Active' : 'Not active' " [ngClass]="row.DeviceActive ? 'glyphicon glyphicon-play label label-success' :

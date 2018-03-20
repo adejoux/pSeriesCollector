@@ -19,11 +19,12 @@ declare var _: any;
 
 
 export class RuntimeComponent implements OnDestroy {
-  /*@ViewChild('viewTestConnectionModal') public viewTestConnectionModal: TestConnectionModal;*/
-
+  
   itemsPerPageOptions: any = ItemsPerPageOptions;
   public isRefreshing: boolean = true;
 
+  public selected : Object = {'page' : 1, 'itemsPerPage' : 100 };
+  public selectedTab : string =  'sections';
   public defaultConfig : any = RuntimeComponentConfig;
   public tableRole : any = TableRole;
   public extraActions: any = ExtraActions;
@@ -57,7 +58,6 @@ export class RuntimeComponent implements OnDestroy {
   public dataTable: Array<any> = [];
   public finalData: Array<Array<any>> = [];
   public columns: Array<any> = [];
-  public finalColumns: Array<Array<any>> = [];
   public tmpcolumns: Array<any> = [];
 
   public refreshRuntime: any = {
@@ -169,6 +169,12 @@ export class RuntimeComponent implements OnDestroy {
     return filteredData;
   }
 
+
+  resetTabs(tab : string) {
+    this.selected = {'page':1, 'itemsPerPage': 100}
+    this.selectedTab = tab;
+  }
+
   changeItemsPerPage(items) {
     if (items) this.itemsPerPage = parseInt(items);
     else this.itemsPerPage = this.length;
@@ -219,17 +225,16 @@ export class RuntimeComponent implements OnDestroy {
     }
     this.isRefreshing = false;
     this.refreshRuntime.Running = false;
+    this.selectedTab = "sections";
     clearInterval(this.intervalStatus);
-    this.measActive = meas || 0;
     if (!this.mySubscription) {
-      this.loadRuntimeById(id, this.measActive);
+      this.loadRuntimeById(id);
     }
   }
 
-  updateRuntimeInfo(id: string, selectedMeas: number, status: boolean) {
+  updateRuntimeInfo(id: string, status: boolean) {
     clearInterval(this.intervalStatus);
     this.refreshRuntime.Running = status;
-    this.measActive = selectedMeas || this.measActive;
     if (this.refreshRuntime.Running) {
       this.isRefreshing = true;
       this.refreshRuntime.LastUpdate = new Date();
@@ -240,7 +245,7 @@ export class RuntimeComponent implements OnDestroy {
           this.isRefreshing = true;
         }, 2000);
         this.refreshRuntime.LastUpdate = new Date();
-        this.loadRuntimeById(id, this.measActive);
+        this.loadRuntimeById(id);
         this.ref.markForCheck();
       }, Math.max(5000, this.runtime_dev['Freq'] * 1000)); //lowest update rate set to 5 sec
     } else {
@@ -263,115 +268,20 @@ export class RuntimeComponent implements OnDestroy {
     return ""
   }
 
-  loadRuntimeById(id: string, selectedMeas: number) {
+  loadRuntimeById(id: string) {
     this.mySubscription = this.runtimeService.getRuntimeById(id)
       .subscribe(
       data => {
         this.isRequesting = false;
         this.mySubscription = null;
-        this.finalColumns = [];
         this.finalData = [];
         this.runtime_dev = data;
         this.runtime_dev.ID = id;
-        //Generate Columns
-        if (data['Measurements'] && data['Measurements'].length > 0) {
-          for (let measKey of data['Measurements']) {
-            console.log('measKey: ', measKey)
-            //Generate the Coluns array, go over it only once using break
-            //Save it as array of arrays on finalColumns
-            if (Object.keys(measKey['MetricTable']['Header']).length !== 0) {
-              this.tmpcolumns = [];
-              if (measKey['TagName'] !== "") this.tmpcolumns.push({ title: measKey['TagName'], name: 'Index' });
-              for (let fieldName in measKey['MetricTable']['Header']) {
-                let fdata = measKey['MetricTable']['Header'][fieldName]
-                let mtype =  measKey['MetricTable']['Header'][fieldName]["Type"]
-                let micon = ''
-                let tt = ''
-                switch (fdata.Report) {
-                  case 0: //never send
-                    micon = 'remove-circle text-danger'
-                    tt = 'this field won\'t be sent'
-                    break;
-                  case 1: //always send
-                    micon = 'ok-circle text-success'
-                    tt = 'this always will send'
-                    break;
-                  case 2: //send i non zero
-                    micon = 'ban-circle text-warning'
-                    tt = 'this field only will be sent if non zero'
-                    break
-
-                }
-                let tmpColumn: any
-                switch (mtype) {
-                  case 'MULTISTRINGPARSER':
-                    tmpColumn = { title: fdata['Title'], name: fieldName, icon: micon, tooltipInfo: fdata ,transform: mtype }
-                  break;
-                  default:
-                    tmpColumn = { title: fieldName, name: fieldName, icon: micon, tooltipInfo: fdata ,transform: mtype }
-                  break;
-                }
-                console.log("MTYPE:",mtype)
-                console.log(tmpColumn)
-                this.tmpcolumns.push(tmpColumn);
-              }
-              this.finalColumns.push(this.tmpcolumns);
-            } else {
-              this.finalColumns.push([]);
-            }
-            //Go over the array again and get the DATA
-            //indexKey contains the Index, must generate the same on multiples arrays
-            for (let rowid in measKey['MetricTable']['Row']) {
-              let row = measKey['MetricTable']['Row'][rowid]
-              let tmpTable: any = { tooltipInfo: {} , class: {}};
-              tmpTable['valid'] = row['Valid'];
-              if (measKey['TagName'] !== "") tmpTable.Index = rowid;
-              for (let metricid in row['Data']) {
-                let metric = row['Data'][metricid]
-                let fieldName = metric.FieldName
-                //Cell values
-                switch (metric.Type) {
-                  case 'MULTISTRINGPARSER':
-                    tmpTable[fieldName] = metric.ValueMap;
-                    tmpTable['tooltipInfo'][fieldName] = _.omit(metric,'ValueMap','Type','Valid');
-                  break;
-                  default:
-                    tmpTable[fieldName] = metric.CookedValue;
-                    tmpTable['tooltipInfo'][fieldName] = _.omit(metric,'Type','Valid');
-                  break;
-                }
-                if ( metric.Valid === true ) {
-                  tmpTable['class'][fieldName] = 'bg-success'
-                }else {
-                  tmpTable['class'][fieldName] = 'bg-danger'
-                }
-
-              }
-              this.dataTable.push(tmpTable);
-            }
-            this.finalData.push(this.dataTable);
-            this.dataTable = [];
-          }
-          this.showTable(selectedMeas ? this.measActive : 0);
-        }
-        if (!this.refreshRuntime.Running) this.updateRuntimeInfo(id, this.measActive, true);
+        if (!this.refreshRuntime.Running) this.updateRuntimeInfo(id,true);
       },
       err => console.error(err),
       () => console.log('DONE')
       );
-  }
-
-  showTable(id: number) {
-    this.columns = [];
-    this.measActive = id;
-    this.myFilterValue = "";
-    this.config.filtering = { filtering: { filterString: '' } };
-    //Reload data and column table
-    this.data = this.finalData[id];
-    this.columns = this.finalColumns[id];
-    //Reload config to enable sort
-    this.config.sorting = { columns: this.columns };
-    this.onChangeTable(this.config);
   }
 
   changeActiveDevice(id, event) {

@@ -215,9 +215,9 @@ export class NgTableComponent {
   public exportItem(row: any, exportType : any) : void {
     this.exportedItem.emit({row, exportType});
   }
-  public testConnection(row: any) : void {
+  /*public testConnection(row: any) : void {
     this.testedConnection.emit(row);
-  }
+  }*/
 
   public customClick(action: string, row: any) : void {
     this.customClicked.emit({'action' : action, 'row' : row});

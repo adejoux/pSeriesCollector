@@ -4,6 +4,7 @@ export const RuntimeComponentConfig: any =
     'table-columns' : [
       { title: 'ID', name: 'ID' },
       { title: 'TagMap', name: 'TagMap', tooltip: 'Num Measurements configured' },
+      { title: 'Type', name: 'Type', tooltip: 'Type of device polling method' },
       { title: 'Metr.Errs', name: 'Counter1', tooltip: 'Metric Errors: number of metrics (taken as fields) with errors for all measurements' },
       { title: 'Meas.Errs', name: 'Counter3', tooltip: 'MeasurementSentErrors: number of measuremenets  formatted with errors ' },
       { title: 'G.Time', name: 'Counter5', tooltip: 'CycleGatherDuration time: elapsed time taken to get all measurement info', transform: 'elapsedseconds' },
