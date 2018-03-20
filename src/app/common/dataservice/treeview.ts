@@ -56,7 +56,8 @@ export class TreeView {
 
   public colorsObject : Object = {
    "hmcservercfg" : 'danger',
-   "influxcfg" : 'info'
+   "influxcfg" : 'info',
+   "devicecfg" : 'success'
  };
  recursive : boolean;
 

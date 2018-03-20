@@ -3,8 +3,10 @@ package webui
 import (
 	//	"time"
 
+	"time"
+
 	"github.com/adejoux/pSeriesCollector/pkg/agent"
-	//	"github.com/adejoux/pSeriesCollector/pkg/agent/output"
+	"github.com/adejoux/pSeriesCollector/pkg/agent/devices/nmon"
 	"github.com/adejoux/pSeriesCollector/pkg/config"
 	"github.com/go-macaron/binding"
 	"gopkg.in/macaron.v1"
@@ -105,21 +107,20 @@ func GetDeviceCfgAffectOnDel(ctx *Context) {
 
 //PingDeviceCfg Return ping result
 func PingDeviceCfg(ctx *Context, cfg config.DeviceCfg) {
-	/*
-		log.Infof("trying to ping influx server %s : %+v", cfg.ID, cfg)
-		_, elapsed, message, err := output.Ping(&cfg)
-		type result struct {
-			Result  string
-			Elapsed time.Duration
-			Message string
-		}
-		if err != nil {
-			log.Debugf("ERROR on ping DeviceDB Server : %s", err)
-			res := result{Result: "NOOK", Elapsed: elapsed, Message: err.Error()}
-			ctx.JSON(400, res)
-		} else {
-			log.Debugf("OK on ping InfluxDB Server %+v, %+v", elapsed, message)
-			res := result{Result: "OK", Elapsed: elapsed, Message: message}
-			ctx.JSON(200, res)
-		}*/
+	log.Infof("trying to ping influx server %s : %+v", cfg.ID, cfg)
+	_, elapsed, message, err := nmon.Ping(&cfg, log, false, "")
+	type result struct {
+		Result  string
+		Elapsed time.Duration
+		Message string
+	}
+	if err != nil {
+		log.Debugf("ERROR on ping Device : %s", err)
+		res := result{Result: "NOOK", Elapsed: elapsed, Message: err.Error()}
+		ctx.JSON(400, res)
+	} else {
+		log.Debugf("OK on ping Device Server %+v, %+v", elapsed, message)
+		res := result{Result: "OK", Elapsed: elapsed, Message: message}
+		ctx.JSON(200, res)
+	}
 }
