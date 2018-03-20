@@ -149,6 +149,9 @@ export class DeviceCfgComponent {
       case 'export' : 
         this.exportItem(action.event);
       break;
+      case 'ping' :
+        this.testDeviceCfgConnection(action.event);
+      break;
       case 'new' :
         this.newItem()
       break;
@@ -326,10 +329,10 @@ export class DeviceCfgComponent {
   }
 
 
-  testDeviceCfgConnection() {
-    this.deviceCfgService.testDeviceCfg(this.deviceForm.value, true)
+  testDeviceCfgConnection(data) {
+    this.deviceCfgService.testDeviceCfg(data, true)
     .subscribe(
-    data =>  this.alertHandler = {msg: 'Influx Version: '+data['Message'], result : data['Result'], elapsed: data['Elapsed'], type: 'success', closable: true},
+    data =>  this.alertHandler = {msg: 'Method:' +data['Message'], result : data['Result'], elapsed: data['Elapsed'], type: 'success', closable: true},
     err => {
         let error = err.json();
         this.alertHandler = {msg: error['Message'], elapsed: error['Elapsed'], result : error['Result'], type: 'danger', closable: true}
