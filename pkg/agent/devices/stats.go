@@ -45,7 +45,7 @@ type DevStat struct {
 	log     *logrus.Logger
 	selfmon *selfmon.SelfMon
 	mutex   sync.Mutex
-
+	Type    string
 	//Counter Statistics
 	Counters []interface{}
 
