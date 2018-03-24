@@ -162,41 +162,27 @@ func ImportHMCDevices(ctx *Context, dev config.HMCCfg) {
 			//Pending add some kind of name resolution to check NMon connectivity.
 			// net.Dial
 			d := &config.DeviceCfg{
-				ID:              lpar.PartitionUUID,
-				Name:            lpar.PartitionName,
-				SerialNumber:    lpar.LogicalSerialNumber,
-				OSVersion:       lpar.OperatingSystemVersion,
-				Type:            lpar.PartitionType,
-				Location:        sm.SystemName,
-				EnableHMCStats:  true,
-				EnableNmonStats: true,
-				NmonFreq:        60,
-				NmonIP:          "",
-				NmonLogLevel:    "info",
-				NmonOutDB:       "default",
-				NmonSSHUser:     "",
-				NmonSSHKey:      "",
+				ID:           lpar.PartitionUUID,
+				Name:         lpar.PartitionName,
+				SerialNumber: lpar.LogicalSerialNumber,
+				OSVersion:    lpar.OperatingSystemVersion,
+				Type:         lpar.PartitionType,
+				Location:     sm.SystemName,
 			}
+			log.Debugf("APICFG_HMCSERVER: ADD OR UPDATE LPAR %#+v", d)
 			agent.MainConfig.Database.AddOrUpdateDeviceCfg(d)
 		}
 		for lparid, lpar := range sm.Vios {
 			log.Infof("Importing Vios System: %s | %s", lparid, lpar.PartitionName)
 			d := &config.DeviceCfg{
-				ID:              lpar.PartitionUUID,
-				Name:            lpar.PartitionName,
-				SerialNumber:    lpar.LogicalSerialNumber,
-				OSVersion:       lpar.OperatingSystemVersion,
-				Type:            lpar.PartitionType,
-				Location:        sm.SystemName,
-				EnableHMCStats:  true,
-				EnableNmonStats: true,
-				NmonFreq:        60,
-				NmonIP:          "",
-				NmonLogLevel:    "info",
-				NmonOutDB:       "default",
-				NmonSSHUser:     "",
-				NmonSSHKey:      "",
+				ID:           lpar.PartitionUUID,
+				Name:         lpar.PartitionName,
+				SerialNumber: lpar.LogicalSerialNumber,
+				OSVersion:    lpar.OperatingSystemVersion,
+				Type:         lpar.PartitionType,
+				Location:     sm.SystemName,
 			}
+			log.Debugf("APICFG_HMCSERVER: ADD OR UPDATE VIOS %#+v", d)
 			agent.MainConfig.Database.AddOrUpdateDeviceCfg(d)
 		}
 	}

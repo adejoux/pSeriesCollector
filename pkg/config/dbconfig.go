@@ -75,7 +75,7 @@ type DeviceCfg struct {
 	EnableNmonStats bool `xorm:"'enable_nmon_stats' default 1"`
 
 	NmonFreq      int    `xorm:"'nmon_freq' default 60" binding:"Default(60);IntegerNotZero"`
-	NmonOutDB     string `xorm:"nmon_outdb"`
+	NmonOutDB     string `xorm:"'nmon_outdb' default 'default'" binding:"Default(default)"`
 	NmonIP        string `xorm:"nmon_ip"`
 	NmonSSHUser   string `xorm:"nmon_ssh_user"`
 	NmonSSHKey    string `xorm:"nmon_ssh_key"`

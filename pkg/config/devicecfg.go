@@ -3,7 +3,7 @@ package config
 import "fmt"
 
 /***************************
-	Influx DB backends
+	Device DB backends
 	-GetDeviceCfgCfgByID(struct)
 	-GetDeviceCfgMap (map - for interna config use
 	-GetDeviceCfgArray(Array - for web ui use )
@@ -23,7 +23,7 @@ func (dbc *DatabaseCfg) GetDeviceCfgByID(id string) (DeviceCfg, error) {
 		return DeviceCfg{}, fmt.Errorf("Error %d results on get DeviceCfg by id %s", len(cfgarray), id)
 	}
 	if len(cfgarray) == 0 {
-		return DeviceCfg{}, fmt.Errorf("Error no values have been returned with this id %s in the influx config table", id)
+		return DeviceCfg{}, fmt.Errorf("Error no values have been returned with this id %s in the Devices config table", id)
 	}
 	return *cfgarray[0], nil
 }
@@ -75,12 +75,12 @@ func (dbc *DatabaseCfg) AddDeviceCfg(dev DeviceCfg) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	log.Infof("Added new influx backend Successfully with id %s ", dev.ID)
+	log.Infof("Added new Devices backend Successfully with id %s ", dev.ID)
 	dbc.addChanges(affected)
 	return affected, nil
 }
 
-/*DelDeviceCfg for deleting influx databases from ID*/
+/*DelDeviceCfg for deleting Devices databases from ID*/
 func (dbc *DatabaseCfg) DelDeviceCfg(id string) (int64, error) {
 	var affecteddev, affected int64
 	var err error
@@ -105,7 +105,7 @@ func (dbc *DatabaseCfg) DelDeviceCfg(id string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	log.Infof("Deleted Successfully influx db with ID %s [ %d Devices Affected  ]", id, affecteddev)
+	log.Infof("Deleted Successfully Devices db with ID %s [ %d Devices Affected  ]", id, affecteddev)
 	dbc.addChanges(affected + affecteddev)
 	return affected, nil
 }
@@ -120,10 +120,12 @@ func (dbc *DatabaseCfg) AddOrUpdateDeviceCfg(dev *DeviceCfg) (int64, error) {
 	}
 	switch len(m) {
 	case 1:
-		log.Debugf("Updating Device %+v", m)
-		return dbc.UpdateDeviceCfg(m[0].ID, *dev)
+		log.Debugf("Updating Device ID[%s] %#+v", m[0].ID, dev)
+		return dbc.UpdateDeviceCfgBase(m[0].ID, *dev)
 	case 0:
-		log.Debugf("Adding new Device %+v", dev)
+		dev.EnableHMCStats = true
+		dev.EnableNmonStats = true
+		log.Debugf("Adding new Device ID[%s] %#+v", dev.ID, dev)
 		return dbc.AddDeviceCfg(*dev)
 	default:
 		log.Errorf("There is some error when searching for db %+v , found %d", dev, len(m))
@@ -132,7 +134,29 @@ func (dbc *DatabaseCfg) AddOrUpdateDeviceCfg(dev *DeviceCfg) (int64, error) {
 
 }
 
-/*UpdateDeviceCfg for adding new influxdb*/
+/*UpdateDeviceCfgBase for adding new Devices from Scanned products , don't change current configurations*/
+func (dbc *DatabaseCfg) UpdateDeviceCfgBase(id string, dev DeviceCfg) (int64, error) {
+	var affecteddev, affected int64
+	var err error
+	session := dbc.x.NewSession()
+	defer session.Close()
+
+	affected, err = session.Where("id='" + id + "'").Update(dev)
+	if err != nil {
+		session.Rollback()
+		return 0, err
+	}
+	err = session.Commit()
+	if err != nil {
+		return 0, err
+	}
+
+	log.Infof("Updated Device  Base Config Successfully with id %s and data:%+v, affected", id, dev)
+	dbc.addChanges(affected + affecteddev)
+	return affected, nil
+}
+
+/*UpdateDeviceCfg for adding new Devices*/
 func (dbc *DatabaseCfg) UpdateDeviceCfg(id string, dev DeviceCfg) (int64, error) {
 	var affecteddev, affected int64
 	var err error
@@ -144,9 +168,9 @@ func (dbc *DatabaseCfg) UpdateDeviceCfg(id string, dev DeviceCfg) (int64, error)
 			session.Rollback()
 			return 0, fmt.Errorf("Error on Update InfluxConfig on update id(old)  %s with (new): %s, error: %s", id, dev.ID, err)
 		}
-		log.Infof("Updated Influx Config to %s devices ", affecteddev)
+		log.Infof("Updated Device Config to %s devices ", affecteddev)
 	}
-
+	log.Debugf("Updating Device %#+v", dev)
 	affected, err = session.Where("id='" + id + "'").UseBool().AllCols().Update(dev)
 	if err != nil {
 		session.Rollback()
@@ -157,7 +181,7 @@ func (dbc *DatabaseCfg) UpdateDeviceCfg(id string, dev DeviceCfg) (int64, error)
 		return 0, err
 	}
 
-	log.Infof("Updated Influx Config Successfully with id %s and data:%+v, affected", id, dev)
+	log.Infof("Updated Device Config Successfully with id %s and data:%+v, affected", id, dev)
 	dbc.addChanges(affected + affecteddev)
 	return affected, nil
 }
