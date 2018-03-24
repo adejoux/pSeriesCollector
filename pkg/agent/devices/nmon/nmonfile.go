@@ -108,9 +108,13 @@ func (nf *NmonFile) Reopen() {
 
 }
 
-// ReopenIfChanged check if file has changed and reopen again if needed
+// ReopenIfChanged check if file has changed read last data in previous file and reopen again if needed
 func (nf *NmonFile) ReopenIfChanged() bool {
+
 	if nf.filePathCheck() {
+		//First we need to read the remaining data in the current buffer
+		numlines, filepos := nf.UpdateContent()
+		nf.log.Debugf("updated last %d lines ( current filepos in %d)", numlines, filepos)
 		//file should be changed (maybe a rotation? or recreation?)
 		//close remote connection
 		nf.File.End()
