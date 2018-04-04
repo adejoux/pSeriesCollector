@@ -3,7 +3,7 @@
 # chkconfig: 2345 80 05
 # description: pseriescollector Agent
 # processname: pseriescollector
-# config: /etc/pseriescollector/config.toml
+# config: /etc/pseriescollector/pseriescollector.toml
 # pidfile: /var/run/pseriescollector.pid
 
 ### BEGIN INIT INFO
@@ -31,7 +31,7 @@ WORK_DIR=$RESIST_HOME
 DATA_DIR=/var/lib/pseriescollector
 PLUGINS_DIR=/var/lib/pseriescollector/plugins
 LOG_DIR=/var/log/pseriescollector
-CONF_FILE=$CONF_DIR/config.toml
+CONF_FILE=$CONF_DIR/pseriescollector.toml
 MAX_OPEN_FILES=10000
 PID_FILE=/var/run/$NAME.pid
 DAEMON=/usr/sbin/$NAME

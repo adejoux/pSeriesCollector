@@ -17,14 +17,14 @@ fi
 export VERSION
 export COMMIT
 
-cp dist/pseriescollector-${VERSION}-${COMMIT}.tar.gz docker/pseriescollector-last.tar.gz
-cp conf/sample.config.toml docker/config.toml
+cp dist/pseriescollector-${VERSION}-${COMMIT}_${GOOS:-linux}_${GOARCH:-amd64}.tar.gz  docker/pseriescollector-last.tar.gz
+cp conf/sample.pseriescollector.toml docker/pseriescollector.toml
 
 cd docker
 
 sudo docker build --label version="${VERSION}" --label commitid="${COMMIT}" -t tonimoreno/pseriescollector:${VERSION} -t tonimoreno/pseriescollector:latest .
 rm pseriescollector-last.tar.gz
-rm config.toml
+rm pseriescollector.toml
 
 sudo docker push tonimoreno/pseriescollector:${VERSION}
 sudo docker push tonimoreno/pseriescollector:latest

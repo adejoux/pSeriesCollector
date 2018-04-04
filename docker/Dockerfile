@@ -8,7 +8,7 @@ VOLUME ["/opt/pseriescollector/conf", "/opt/pseriescollector/log"]
 EXPOSE 8090
 
 WORKDIR /opt/pseriescollector
-COPY ./config.toml ./conf/
+COPY ./pseriescollector.toml ./conf/
 COPY ./start.sh /
 
 ENTRYPOINT ["/start.sh"]

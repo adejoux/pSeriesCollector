@@ -173,7 +173,7 @@ func createDebPackages() {
 		homeDir:                "/usr/share/pseriescollector",
 		binPath:                "/usr/sbin/pseriescollector",
 		configDir:              "/etc/pseriescollector",
-		configFilePath:         "/etc/pseriescollector/config.toml",
+		configFilePath:         "/etc/pseriescollector/pseriescollector.toml",
 		etcDefaultPath:         "/etc/default",
 		etcDefaultFilePath:     "/etc/default/pseriescollector",
 		initdScriptFilePath:    "/etc/init.d/pseriescollector",
@@ -194,7 +194,7 @@ func createRpmPackages() {
 		homeDir:                "/usr/share/pseriescollector",
 		binPath:                "/usr/sbin/pseriescollector",
 		configDir:              "/etc/pseriescollector",
-		configFilePath:         "/etc/pseriescollector/config.toml",
+		configFilePath:         "/etc/pseriescollector/pseriescollector.toml",
 		etcDefaultPath:         "/etc/sysconfig",
 		etcDefaultFilePath:     "/etc/sysconfig/pseriescollector",
 		initdScriptFilePath:    "/etc/init.d/pseriescollector",
@@ -255,7 +255,7 @@ func createFpmPackage(options linuxPackageOptions) {
 	// remove bin path
 	runPrint("rm", "-rf", filepath.Join(packageRoot, options.homeDir, "bin"))
 	// copy sample ini file to /etc/pseriescollector
-	runPrint("cp", "conf/sample.config.toml", filepath.Join(packageRoot, options.configFilePath))
+	runPrint("cp", "conf/sample.pseriescollector.toml", filepath.Join(packageRoot, options.configFilePath))
 
 	args := []string{
 		"-s", "dir",

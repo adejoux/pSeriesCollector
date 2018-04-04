@@ -12,6 +12,6 @@ MAX_OPEN_FILES=10000
 
 CONF_DIR=/etc/pseriescollector
 
-CONF_FILE=/etc/pseriescollector/config.toml
+CONF_FILE=/etc/pseriescollector/pseriescollector.toml
 
 RESTART_ON_UPGRADE=false
