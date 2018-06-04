@@ -45,7 +45,7 @@ func (dbc *DatabaseCfg) InitDB() {
 	switch dbc.Type {
 	case "sqlite3":
 		dbtype = "sqlite3"
-		datasource = dataDir + "/" + dbc.Name + ".db"
+		datasource = dataDir + "/" + dbc.Name + ".db?cache=shared&mode=rwc"
 	case "mysql":
 		dbtype = "mysql"
 		protocol := "tcp"

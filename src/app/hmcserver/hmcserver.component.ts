@@ -102,7 +102,7 @@ export class HMCServerComponent implements OnInit {
 
   importHMCDevices(data:any) {
     var r = true;
-    r = confirm("Import all Devices from " + data.ID+". This will override all defined devices. Proceed?");
+    r = confirm("Import all Devices from " + data.ID+". This will update all defined devices. Proceed?");
     if (r == true) {
       this._blocker.start(this.container, "Importing all Devices from "+ data.ID +". Please wait...");
       this.hmcserverService.importHMCDevices(data, true)
