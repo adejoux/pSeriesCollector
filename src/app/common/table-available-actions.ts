@@ -194,9 +194,15 @@ export class AvailableTableActions {
                 ]
               },
               {
+                'title': 'NmonFilePath', 'type': 'input', 'options':
+                  new FormGroup({
+                    formControl: new FormControl('')
+                  })
+              },
+              {
                 'title': 'NmonFreq', 'type': 'input', 'options':
                   new FormGroup({
-                    formControl: new FormControl('', Validators.compose([Validators.required, ValidationService.uintegerNotZeroValidator]))
+                    formControl: new FormControl('',ValidationService.uintegerNotZeroValidator)
                   })
               },
               {
@@ -206,13 +212,13 @@ export class AvailableTableActions {
               {
                 'title': 'NmonSSHUser', 'type': 'input', 'options':
                   new FormGroup({
-                    formControl: new FormControl('', Validators.required)
+                    formControl: new FormControl('')
                   })
               },
               {
                 'title': 'NmonSSHKey', 'type': 'input-password', 'options':
                   new FormGroup({
-                    formControl: new FormControl('', Validators.required)
+                    formControl: new FormControl('')
                   })
               },
               {
