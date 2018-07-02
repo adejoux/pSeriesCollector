@@ -48,6 +48,8 @@ func (d *Server) ImportData(points *pointarray.PointArray) error {
 		pos, err := d.NmonFile.InitSectionDefs()
 		if err != nil {
 			d.Errorf("ImportData: Error on Section Initializations after reopen file :%s ", err)
+			d.Errorf("ImportData: New file is not open. Reseting file on next interval")
+			d.NmonFile = nil
 			return err
 		}
 

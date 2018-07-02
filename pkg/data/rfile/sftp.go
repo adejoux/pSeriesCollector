@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
-const size = 64000
+const size = 32768
 
 //SSHConfig contains SSH parameters
 type SSHConfig struct {
