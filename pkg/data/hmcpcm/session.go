@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"encoding/xml"
-	//	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -135,7 +134,8 @@ func (s *Session) httpGet(link string) ([]byte, error) {
 		return nil, readErr
 	}
 	if response.StatusCode != 200 {
-		s.Errorf("Error getting LPAR informations. status code: %d", response.StatusCode)
+		s.Errorf("Error getting LPAR informations. status code: %d. URL: %s", response.StatusCode, link)
+		return nil, fmt.Errorf("Error getting LPAR information %s", link)
 	}
 	return contents, nil
 }
