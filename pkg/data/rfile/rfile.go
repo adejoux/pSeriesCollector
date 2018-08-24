@@ -76,10 +76,10 @@ func (rf *File) GetRemoteReader() (*RemoteFileReader, error) {
 }
 
 //Content returns the nmon files content  from the current postion until the last writted line
-func (rf *File) Content() ([]string, int64) {
+func (rf *File) Content() ([]string, int64, error) {
 	if rf.reader == nil {
 		rf.log.Warnf("Trying to read data without open reader")
-		return nil, 0
+		return nil, 0, fmt.Errorf("Trying to read data without open reader")
 	}
 
 	var lines []string
@@ -94,9 +94,9 @@ func (rf *File) Content() ([]string, int64) {
 	pos, err := rf.reader.Seek(0, 1)
 	if err != nil {
 		rf.log.Warnf("Error on get current remote file position")
-		return lines, 0
+		return lines, 0, err
 	}
-	return lines, pos
+	return lines, pos, nil
 }
 
 //ContentUntilMatch returns the nmon files content  from the current position until one line match regexp

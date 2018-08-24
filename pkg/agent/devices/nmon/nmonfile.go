@@ -120,6 +120,7 @@ func (nf *NmonFile) ReopenIfChanged() bool {
 		nf.File.End()
 		//recreate a new connection
 		nf.File = rfile.New(nf.sftpConn, nf.log, nf.CurFile)
+		//// PONER CHECK DE READER ABIERTO
 		return true
 	}
 	return false
@@ -277,7 +278,17 @@ func (nf *NmonFile) Init() (int64, error) {
 
 // UpdateContent from remoteFile return num of  new lines , and new pos
 func (nf *NmonFile) UpdateContent() (int, int64) {
-	morelines, pos := nf.File.Content()
+	morelines, pos, err := nf.File.Content()
+	if err != nil {
+		if morelines == nil && pos == 0 {
+			//here the error : (Trying to read data without open reader)  is happening.
+			nf.log.Warnf("Error on not open reader detected, reinitializing... ")
+			nf.File.Init()
+			return 0, 0
+		}
+		nf.log.Error("On update content: %s", err)
+		return len(morelines), pos
+	}
 	nf.log.Infof("UpdateContent: Got new %d lines from NmonFile ", len(morelines))
 	// replace data if needed depending on the delimiter
 	if nf.Delimiter == ";" {
