@@ -486,7 +486,7 @@ func (d *HMCServer) ImportSMData(points *pointarray.PointArray, system *hmcpcm.M
 		switch sample.SampleInfo.Status {
 		case 1:
 			// if sample sample.SampleInfo.Statusstatus equal 1 we have no data in this sample
-			d.Infof(" | SYSTEM [%s] | Skipping sample. Error in sample collection: %s", system.SystemName, sample.SampleInfo.ErrorInfo[0].ErrMsg)
+			d.Infof(" | SYSTEM [%s] | Skipping sample. Error in sample collection: No data in this sample", system.SystemName)
 			continue
 		case 2:
 			// if sample sample.SampleInfo.Statusstatus equal 2 there is some error message but could continue
