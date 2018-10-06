@@ -374,17 +374,16 @@ var dgRegexp = regexp.MustCompile(`^DG([a-zA-Z]*).*`)
 //DGSIZE,Disk Group Block Size KB XXXXXXX
 //DGXFER,Disk Group Transfers/s XXXXXXX
 
-func fieldFromLine(line string, reg *regexp.Regexp) string {
+func fieldFromLine(line string, reg *regexp.Regexp, delimiter string) string {
 	//fieldname from Section name in lowercase
 	matched := reg.FindStringSubmatch(line)
-	var fieldname string
-	//if not data
-	if len(matched[1]) > 0 {
-		fieldname = strings.ToLower(matched[1])
-	} else {
-		fieldname = strings.ToLower(matched[0])
+
+	if len(matched) == 1 {
+		//not match
+		ar := strings.Split(matched[0], delimiter)
+		return strings.ToLower(ar[0])
 	}
-	return fieldname
+	return strings.ToLower(matched[1])
 }
 
 func (nf *NmonFile) processColumnAsTags(pa *pointarray.PointArray, Tags map[string]string, t time.Time, lines []string, measname string, tagname string, fieldregexp *regexp.Regexp) {
@@ -398,7 +397,7 @@ func (nf *NmonFile) processColumnAsTags(pa *pointarray.PointArray, Tags map[stri
 
 	for _, line := range lines {
 
-		fieldname := fieldFromLine(line, fieldregexp)
+		fieldname := fieldFromLine(line, fieldregexp, nf.Delimiter)
 		//Tags from Column Names
 		elems := strings.Split(line, nf.Delimiter)
 		name := elems[0]
@@ -417,7 +416,7 @@ func (nf *NmonFile) processColumnAsTags(pa *pointarray.PointArray, Tags map[stri
 		elems := strings.Split(line, nf.Delimiter)
 		name := elems[0]
 
-		field := fieldFromLine(line, fieldregexp)
+		field := fieldFromLine(line, fieldregexp, nf.Delimiter)
 
 		for i, value := range elems[2:] {
 			if len(nf.Sections[name].Columns) < i+1 {
