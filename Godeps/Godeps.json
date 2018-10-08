@@ -18,8 +18,8 @@
 		},
 		{
 			"ImportPath": "github.com/fsnotify/fsnotify",
-			"Comment": "v1.4.2-6-g4da3e2c",
-			"Rev": "4da3e2cfbabc9f751898f250b49f2439785783a1"
+			"Comment": "v1.4.7",
+			"Rev": "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
 		},
 		{
 			"ImportPath": "github.com/go-macaron/binding",
@@ -109,7 +109,8 @@
 		},
 		{
 			"ImportPath": "github.com/kr/fs",
-			"Rev": "2788f0dbd16903de03cb8186e5c7d97b69ad387b"
+			"Comment": "v0.1.0",
+			"Rev": "1455def202f6e05b95cc7bfc7e8ae67ae5141eba"
 		},
 		{
 			"ImportPath": "github.com/magiconair/properties",
@@ -123,7 +124,7 @@
 		},
 		{
 			"ImportPath": "github.com/mitchellh/mapstructure",
-			"Rev": "53818660ed4955e899c0bcafa97299a388bd7c8e"
+			"Rev": "d0303fe809921458f417bcf828397a65db30a7e4"
 		},
 		{
 			"ImportPath": "github.com/pelletier/go-buffruneio",
@@ -137,13 +138,13 @@
 		},
 		{
 			"ImportPath": "github.com/pkg/errors",
-			"Comment": "v0.8.0",
-			"Rev": "645ef00459ed84a119197bfb8d8205042c6df63d"
+			"Comment": "v0.8.0-13-gc059e47",
+			"Rev": "c059e472caf75dbe73903f6521a20abac245b17f"
 		},
 		{
 			"ImportPath": "github.com/pkg/sftp",
-			"Comment": "1.0.0-1-g7c1f7a3",
-			"Rev": "7c1f7a370726a2457b33b29baefc2402b4965c65"
+			"Comment": "v1.8.3",
+			"Rev": "08de04f133f27844173471167014e1a753655ac8"
 		},
 		{
 			"ImportPath": "github.com/spf13/afero",
@@ -172,43 +173,43 @@
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/curve25519",
-			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
+			"Rev": "e3636079e1a4c1f337f212cc5cd2aca108f6c900"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ed25519",
-			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
+			"Rev": "e3636079e1a4c1f337f212cc5cd2aca108f6c900"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ed25519/internal/edwards25519",
-			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
+			"Rev": "e3636079e1a4c1f337f212cc5cd2aca108f6c900"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/internal/chacha20",
-			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
+			"Rev": "e3636079e1a4c1f337f212cc5cd2aca108f6c900"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/pbkdf2",
-			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
+			"Rev": "e3636079e1a4c1f337f212cc5cd2aca108f6c900"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/poly1305",
-			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
+			"Rev": "e3636079e1a4c1f337f212cc5cd2aca108f6c900"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ssh",
-			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
+			"Rev": "e3636079e1a4c1f337f212cc5cd2aca108f6c900"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ssh/agent",
-			"Rev": "1875d0a70c90e57f11972aefd42276df65e895b9"
+			"Rev": "e3636079e1a4c1f337f212cc5cd2aca108f6c900"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
-			"Rev": "f2499483f923065a842d38eb4c7f1927e6fc6e6d"
+			"Rev": "d1e1b351919c6738fdeb9893d5c998b161464f0c"
 		},
 		{
 			"ImportPath": "golang.org/x/sys/unix",
-			"Rev": "37707fdb30a5b38865cfb95e5aab41707daec7fd"
+			"Rev": "4497e2df6f9e69048a54498c7affbbec3294ad47"
 		},
 		{
 			"ImportPath": "golang.org/x/text/transform",
@@ -231,6 +232,10 @@
 		{
 			"ImportPath": "gopkg.in/yaml.v2",
 			"Rev": "4c78c975fe7c825c6d1466c42be594d1d6f3aba6"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/internal/subtle",
+			"Rev": "e3636079e1a4c1f337f212cc5cd2aca108f6c900"
 		}
 	]
 }
