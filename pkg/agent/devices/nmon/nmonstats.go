@@ -378,7 +378,7 @@ func fieldFromLine(line string, reg *regexp.Regexp, delimiter string) string {
 	//fieldname from Section name in lowercase
 	matched := reg.FindStringSubmatch(line)
 
-	if len(matched) == 1 {
+	if len(matched) == 1 || (len(matched) == 2 && matched[1] == "") {
 		//not match
 		ar := strings.Split(matched[0], delimiter)
 		return strings.ToLower(ar[0])
@@ -398,6 +398,7 @@ func (nf *NmonFile) processColumnAsTags(pa *pointarray.PointArray, Tags map[stri
 	for _, line := range lines {
 
 		fieldname := fieldFromLine(line, fieldregexp, nf.Delimiter)
+
 		//Tags from Column Names
 		elems := strings.Split(line, nf.Delimiter)
 		name := elems[0]
@@ -409,7 +410,7 @@ func (nf *NmonFile) processColumnAsTags(pa *pointarray.PointArray, Tags map[stri
 			measurements[tag][fieldname] = nil
 		}
 	}
-	nf.log.Debugf("Detected Struct %+v", measurements)
+	nf.log.Debugf("Detected Struct for measurement %s: %+v", measname, measurements)
 
 	for _, line := range lines {
 
@@ -437,6 +438,8 @@ func (nf *NmonFile) processColumnAsTags(pa *pointarray.PointArray, Tags map[stri
 
 	}
 	//only one measurement  ( one write) is needed becouse of memnew/memuse/mem has diferent fields and any tag
+
+	nf.log.Debugf("Detected Struct for measurement %s: %+v", measname, measurements)
 
 	//now we can send all generated data
 
