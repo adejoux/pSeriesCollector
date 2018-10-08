@@ -1,5 +1,14 @@
+# v 0.4.2 (2018-10-08)
 
-# v 0.1.X  (unreleased )
+* Updated SFTP base library
+* Updated all Crypto base library
+* upgrade go compiler to 1.11
+
+### fixes
+
+* #25,#27,#28
+
+# v 0.1.X  (unreleased)
 ### New features.
 *  Added HMC Device connection and Measurement Gathering data.
 *  Added  metric/measurment spent time to gather data statistics 
