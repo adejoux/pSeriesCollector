@@ -1,8 +1,10 @@
 package nmon
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -14,31 +16,34 @@ import (
 	"github.com/adejoux/pSeriesCollector/pkg/data/utils"
 
 	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
 )
 
 // Server contains all runtime device related device configu ns and state
 type Server struct {
 	devices.Base
-	client   *sftp.Client
-	cfg      *config.DeviceCfg
-	NmonFile *NmonFile
+	Timezone   string
+	cfg        *config.DeviceCfg
+	sftpclient *sftp.Client
+	sshclient  *ssh.Client
+	NmonFile   *NmonFile
 }
 
 // Ping check connection to the
-func Ping(c *config.DeviceCfg, log *logrus.Logger, apidbg bool, filename string) (*sftp.Client, time.Duration, string, error) {
+func Ping(c *config.DeviceCfg, log *logrus.Logger, apidbg bool, filename string) (*sftp.Client, *ssh.Client, time.Duration, string, error) {
 	start := time.Now()
 	sshhost := ""
 	if len(c.NmonIP) == 0 {
 		c.NmonIP = c.Name
 	}
-	sftp, err := rfile.InitSFTP(c.NmonIP, c.NmonSSHUser, c.NmonSSHKey)
+	sftp, ssh, err := rfile.InitSFTP(c.NmonIP, c.NmonSSHUser, c.NmonSSHKey)
 	elapsed := time.Since(start)
 	if err != nil {
 		log.Errorf("Error en SSH connection (host: %s user:%s key: %s)  Error: %s", sshhost, c.NmonSSHUser, c.NmonSSHKey, err)
-		return nil, elapsed, "test", err
+		return nil, nil, elapsed, "test", err
 	}
 
-	return sftp, elapsed, "SFTP test", nil
+	return sftp, ssh, elapsed, "SFTP test", nil
 }
 
 //ScanNmonDevice scan Device
@@ -194,9 +199,30 @@ func (d *Server) Init(c *config.DeviceCfg) error {
 
 // ReleaseClient release connections
 func (d *Server) releaseClient() {
-	if d.client != nil {
-		d.client.Close()
+	if d.sftpclient != nil {
+		d.sftpclient.Close()
 	}
+	if d.sshclient != nil {
+		d.sshclient.Close()
+	}
+}
+
+// SSHRemoteExec a way to exec basic commands
+func (d *Server) SSHRemoteExec(cmd string) (string, error) {
+	session, err := d.sshclient.NewSession()
+	if err != nil {
+		return "", err
+	}
+	defer session.Close()
+	var b bytes.Buffer
+	session.Stdout = &b // get output
+	// Finally, run the command TZ
+
+	err = session.Run(cmd)
+	if err != nil {
+		return b.String(), err
+	}
+	return b.String(), nil
 }
 
 // reconnect does HTTP connection  protocol
@@ -205,15 +231,35 @@ func (d *Server) reconnect() error {
 	var id string
 	var err error
 	d.Debugf("Trying Reconnect again....")
-	if d.client != nil {
-		d.client.Close()
+	if d.sftpclient != nil {
+		d.sftpclient.Close()
 	}
-	d.client, t, id, err = Ping(d.cfg, d.GetLogger(), d.cfg.NmonProtDebug, d.cfg.ID)
+	d.sftpclient, d.sshclient, t, id, err = Ping(d.cfg, d.GetLogger(), d.cfg.NmonProtDebug, d.cfg.ID)
 	if err != nil {
 		d.Errorf("Error on Device connection %s", err)
 		return err
 	}
-	d.Infof("Connected to Device  OK : ID: %s : Duration %s ", id, t.String())
+	//GetServer TimeZone
+	// Create a SSH session. It is one session per command.
+	out, err := d.SSHRemoteExec("echo $TZ")
+	if err != nil {
+		d.Warnf("Error on get TimeZone by cmd echo $TZ: %s", err)
+	}
+	d.Timezone = strings.TrimSuffix(out, "\n")
+	if len(d.Timezone) > 0 {
+		d.Infof("Connected to Device  OK : ID: %s : Duration %s : Timezone :%s ", id, t.String(), d.Timezone)
+		return nil
+	}
+	out, err = d.SSHRemoteExec("cat /etc/timezone")
+	if err != nil {
+		d.Warnf("Error on get TimeZone /etc/timezone: %s", err)
+	}
+
+	d.Timezone = strings.TrimSuffix(out, "\n")
+	if len(d.Timezone) > 0 {
+		d.Infof("Connected to Device  OK : ID: %s : Duration %s : Timezone :%s ", id, t.String(), d.Timezone)
+		return nil
+	}
 	return nil
 }
 

@@ -108,7 +108,7 @@ func GetDeviceCfgAffectOnDel(ctx *Context) {
 //PingDeviceCfg Return ping result
 func PingDeviceCfg(ctx *Context, cfg config.DeviceCfg) {
 	log.Infof("trying to ping influx server %s : %+v", cfg.ID, cfg)
-	_, elapsed, message, err := nmon.Ping(&cfg, log, false, "")
+	_, _, elapsed, message, err := nmon.Ping(&cfg, log, false, "")
 	type result struct {
 		Result  string
 		Elapsed time.Duration

@@ -61,15 +61,15 @@ func (nf *NmonFile) AppendText(text string) {
 	nf.TextContent = append(nf.TextContent, text)
 }
 
-// => l
+// => check for changes in the file
 func (nf *NmonFile) filePathCheck() bool {
 	pattern := nf.FilePattern
 	t := time.Now()
 	nf.log.Debugf("Current Time: %s", t.String())
 	then := t.Add(time.Duration(nf.RotateDelay) * time.Second * -1)
 	nf.log.Debugf("Time 1 period ago: %s", then.String())
-	year, month, day := then.Date()
-	hour, min, sec := then.Clock()
+	year, month, day := then.In(nf.tzLocation).Date()
+	hour, min, sec := then.In(nf.tzLocation).Clock()
 	yearstr := strconv.Itoa(year)
 	//  /var/log/nmon/%{hostname}_%Y%m%d_%H%M.nmon => (/var/log/nmon/fooserver_20180305_1938.nmon )
 	pattern = strings.Replace(pattern, "%{hostname}", strings.ToLower(nf.HostName), -1)
@@ -266,8 +266,8 @@ func (nf *NmonFile) InitSectionDefs() (int64, error) {
 }
 
 // Init Initialize NmonFile struct return current position after initialized
-func (nf *NmonFile) Init() (int64, error) {
-	nf.SetTimeZoneLocation("") //pending set location from system
+func (nf *NmonFile) Init(timezone string) (int64, error) {
+	nf.SetTimeZoneLocation(timezone) //pending set location from system
 	nf.filePathCheck()
 	nf.File = rfile.New(nf.sftpConn, nf.log, nf.CurFile)
 	pos, err := nf.InitSectionDefs()

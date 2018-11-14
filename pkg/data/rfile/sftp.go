@@ -22,17 +22,17 @@ type SSHConfig struct {
 }
 
 //InitSFTP init sftp session
-func InitSFTP(host string, sshUser string, key string) (*sftp.Client, error) {
+func InitSFTP(host string, sshUser string, key string) (*sftp.Client, *ssh.Client, error) {
 	var auths []ssh.AuthMethod
 
 	if IsFile(key) {
 		pemBytes, err := ioutil.ReadFile(key)
 		if err != nil {
-			return nil, fmt.Errorf("Error on read KeyFile: Error: %s", err)
+			return nil, nil, fmt.Errorf("Error on read KeyFile: Error: %s", err)
 		}
 		signer, err := ssh.ParsePrivateKey(pemBytes)
 		if err != nil {
-			return nil, fmt.Errorf("parse key failed: %s", err)
+			return nil, nil, fmt.Errorf("parse key failed: %s", err)
 		}
 
 		auths = append(auths, ssh.PublicKeys(signer))
@@ -51,14 +51,15 @@ func InitSFTP(host string, sshUser string, key string) (*sftp.Client, error) {
 	sshhost := fmt.Sprintf("%s:22", host)
 	conn, err := ssh.Dial("tcp", sshhost, config)
 	if err != nil {
-		return nil, fmt.Errorf("dial failed:%v", err)
+		return nil, nil, fmt.Errorf("dial failed:%v", err)
 	}
 
 	c, err := sftp.NewClient(conn, sftp.MaxPacket(size))
 	if err != nil {
-		return nil, fmt.Errorf("unable to start sftp subsytem: %v", err)
+		return nil, conn, fmt.Errorf("unable to start sftp subsytem: %v", err)
 	}
-	return c, nil
+
+	return c, conn, nil
 }
 
 //IsFile returns true if the file doesn't exist
