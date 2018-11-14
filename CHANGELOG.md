@@ -1,3 +1,10 @@
+# v 0.5.0 (unreleased)
+
+* Updated All Dependencies to last version.
+* Migrated Dependencies tool godep to dep
+* Added support for set remote TimeZone no remote nmon file load.
+
+
 # v 0.4.2 (2018-10-08)
 
 * Updated SFTP base library

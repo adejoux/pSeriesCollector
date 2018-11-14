@@ -321,7 +321,6 @@ func ChangeWorkingDir(dir string) {
 }
 
 func setup() {
-	runPrint("go", "get", "-v", "github.com/tools/godep")
 	//pending to check if these following 3 lines are really needed
 	runPrint("go", "get", "-v", "github.com/blang/semver")
 	runPrint("go", "get", "-v", "github.com/mattn/go-sqlite3")
