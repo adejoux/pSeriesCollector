@@ -1,4 +1,9 @@
-# v 0.5.0 (unreleased)
+# v 0.5.1 (2019-01-09)
+
+* Fix #31
+
+
+# v 0.5.0 (2018-11-14)
 
 * Updated All Dependencies to last version.
 * Migrated Dependencies tool godep to dep

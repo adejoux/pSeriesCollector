@@ -148,10 +148,18 @@ func (nf *NmonFile) processTopStats(pa *pointarray.PointArray, Tags map[string]s
 		}
 
 		tags := utils.MapDupAndAdd(Tags, map[string]string{
-			"pid":     elems[1],
+			//			"pid":     elems[1],
 			"command": elems[13],
 			"wlm":     wlmclass,
 		})
+
+		//adding  PID as integer field instead of tag
+
+		converted, parseErr := strconv.ParseInt(elems[1], 10, 0)
+		if parseErr != nil {
+			nf.log.Warnf("There is some trouble to convert PID (%s)  to integuer Err  :%s ", elems[1], parseErr)
+		}
+		fields["pid"] = converted
 
 		for i, value := range elems[3:12] {
 			column := nf.Sections["TOP"].Columns[i]
