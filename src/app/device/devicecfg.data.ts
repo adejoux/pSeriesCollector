@@ -12,6 +12,7 @@ export const DeviceCfgComponentConfig: any =
       { title: 'Enable Nmon Stats', name: 'EnableNmonStats' },
       { title: 'NmonOutDB', name: 'NmonOutDB' },
       { title: 'NmonSSHUser', name: 'NmonSSHUser' },
+      { title: 'Nmon Filters', name: 'NmonFilters' },
       { title: 'ExtraTags', name: 'ExtraTags' }
     ],
     'slug' : 'devicecfg'

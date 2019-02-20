@@ -49,11 +49,17 @@ type NmonFile struct {
 	tzLocation   *time.Location
 	LastTime     time.Time
 	RotateDelay  int
+	UserFilters  map[string]*regexp.Regexp
 }
 
 // NewNmonFile create a NmonFile , Hostname needed to Parse pattern
-func NewNmonFile(sftp *sftp.Client, l *logrus.Logger, pattern string, host string, delay int) *NmonFile {
-	return &NmonFile{log: l, FilePattern: pattern, sftpConn: sftp, HostName: host, RotateDelay: delay}
+func NewNmonFile(sftp *sftp.Client, l *logrus.Logger, pattern string, host string, delay int, filtermap map[string]*regexp.Regexp) *NmonFile {
+	return &NmonFile{log: l,
+		FilePattern: pattern,
+		sftpConn:    sftp,
+		HostName:    host,
+		RotateDelay: delay,
+		UserFilters: filtermap}
 }
 
 // AppendText add text section to dashboard
@@ -398,6 +404,9 @@ func (nf *NmonFile) ProcessPending(points *pointarray.PointArray, tags map[strin
 
 }
 
+//Original from nmon2influxdb was regexp.MustCompile(`T0+\W|^Z|^TOP.%CPU`)
+//not really filtering TOP on some devices
+//we have added a UserFilter per device
 var skipRegexp = regexp.MustCompile(`T0+\W|^Z|^TOP.%CPU`)
 
 // ProcessChunk process a
@@ -451,6 +460,17 @@ func (nf *NmonFile) ProcessChunk(pa *pointarray.PointArray, Tags map[string]stri
 		//-----------------------------------------------------------------------------
 		// We will only process , format and send measurements from known Nmon Seccions
 		//-----------------------------------------------------------------------------
+		//USER FILTERS
+
+		if len(nf.UserFilters) > 0 {
+			nf.log.Infof("Found %d user Filters", len(nf.UserFilters))
+			var userfiltered []string
+			for k, v := range nf.UserFilters {
+				userfiltered, remain = utils.Grep(remain, v)
+				nf.log.Infof("USER Filter %s APPLIED: Skipped %d Lines", k, len(userfiltered))
+				nf.log.Debugf("USER Filter %s APPLIED: Skipped: %+v", k, userfiltered)
+			}
+		}
 
 		//CPU
 		linesok, remain = utils.Grep(remain, cpuRegexp)

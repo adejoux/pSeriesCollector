@@ -1,3 +1,7 @@
+# v 0.5.2 (2019-02-19)
+
+* Added new NmonFilters (USER FILTERS) option into the device section as an comma separated REGEX array, allowing users skip some data from the nmon files. ( implemements #33) , the default will be allways "^TOP" tha ussually sends to muchs data to our databases
+
 # v 0.5.1 (2019-01-09)
 
 * Fix #31

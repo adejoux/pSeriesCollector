@@ -226,6 +226,12 @@ export class AvailableTableActions {
                   new FormGroup({
                     formControl: new FormControl('', Validators.compose([ValidationService.noWhiteSpaces, ValidationService.extraTags]))
                   })
+              },
+              {
+                'title': 'NmonFilters', 'type': 'input', 'options':
+                  new FormGroup({
+                    formControl: new FormControl('', Validators.compose([ValidationService.noWhiteSpaces,ValidationService.isValidRegexArray]))
+                  })
               }
             ]
           },

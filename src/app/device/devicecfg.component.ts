@@ -102,6 +102,7 @@ export class DeviceCfgComponent {
       NmonFilePath: [this.deviceForm ? this.deviceForm.value.NmonFilePath : '/var/log/nmon/%{hostname}_%Y%m%d_%H%M.nmon'],
       NmonProtDebug: [this.deviceForm ? this.deviceForm.value.NmonProtDebug : 'false'],
       ExtraTags: [this.deviceForm ? (this.deviceForm.value.ExtraTags ? this.deviceForm.value.ExtraTags : "" ) : "" , Validators.compose([ValidationService.noWhiteSpaces, ValidationService.extraTags])],
+      NmonFilters: [this.deviceForm ? (this.deviceForm.value.NmonFilters ? this.deviceForm.value.NmonFilters : "^TOP" ) : "^TOP" , Validators.compose([ValidationService.noWhiteSpaces,ValidationService.isValidRegexArray])],
       Description: [this.deviceForm ? this.deviceForm.value.Description : '']
     });
   }

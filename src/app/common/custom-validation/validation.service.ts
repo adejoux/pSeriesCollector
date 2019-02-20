@@ -9,6 +9,7 @@ export class ValidationService {
             'invalidFloat': 'Invalid number. Must be a float. i.e: 3.2, -4',
             'invalidInteger': 'Invalid number. Must be an integer',
             'invalidExtraTags': 'Invalid format. Must be key=value, separated by commas',
+            'invalidArrayRegex': 'Invalid format. Must be an comma separated regex array',
             'invalidWhiteSpaces': 'Invalid. Can\'t contain white spaces',
             'invalidUInteger': 'Invalid Number . Must be a Unsigned (positive) Integer',
             'invalidUInteger8': 'Invalid Number . Must be a Unsigned (positive) Integer with range 0-255',
@@ -163,6 +164,20 @@ export class ValidationService {
             } else {
                 return { 'invalidExtraTags': true };
             }
+        }
+    }
+    static isValidRegexArray(control) {
+        if (control.value) {
+            let a = control.value.toString().split(',')
+            var i;
+            for ( i = 0; i < a.length; i++) {
+                try {
+                    new RegExp(a[i]);
+                } catch(e) {
+                    return { 'invalidArrayRegex': true };           
+                }
+            }
+            return null
         }
     }
 

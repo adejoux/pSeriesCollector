@@ -11,7 +11,7 @@ func (d *Server) ImportData(points *pointarray.PointArray) error {
 	d.Infof("ImportData: Import Nmon data on remote device (%s) ", d.cfg.NmonIP)
 	if d.NmonFile == nil {
 		d.Infof("ImportData: Initializing Nmon Remote File")
-		nf := NewNmonFile(d.sftpclient, d.GetLogger(), d.cfg.NmonFilePath, d.cfg.Name, d.cfg.NmonFreq)
+		nf := NewNmonFile(d.sftpclient, d.GetLogger(), d.cfg.NmonFilePath, d.cfg.Name, d.cfg.NmonFreq, d.FilterMap)
 		filepos, err := nf.Init(d.Timezone)
 		if err != nil {
 			d.Errorf("ImportData: Something happen on Initialize Nmon file: %s [Reopen Again....]", err)

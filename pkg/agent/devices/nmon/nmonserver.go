@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -27,6 +28,7 @@ type Server struct {
 	sftpclient *sftp.Client
 	sshclient  *ssh.Client
 	NmonFile   *NmonFile
+	FilterMap  map[string]*regexp.Regexp
 }
 
 // Ping check connection to the
@@ -55,6 +57,23 @@ func (d *Server) ScanNmonDevice() error {
 func New(c *config.DeviceCfg) *Server {
 	dev := Server{}
 	dev.Init(c)
+	//Creating filters
+	if len(c.NmonFilters) > 0 {
+		dev.FilterMap = make(map[string]*regexp.Regexp)
+		for _, f := range c.NmonFilters {
+			if len(strings.TrimSpace(f)) == 0 {
+				dev.Warnf("User Filter is void [%s]", f)
+				continue
+			}
+			dev.Infof("Found NMON Filter: %s", f)
+			reg, err := regexp.Compile(f)
+			if err != nil {
+				dev.Errorf("Regex Error on filter %s, Error:%s", f, err)
+				continue
+			}
+			dev.FilterMap[f] = reg
+		}
+	}
 	return &dev
 }
 

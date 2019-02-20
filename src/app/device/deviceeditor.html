@@ -192,6 +192,14 @@
           <control-messages [control]="deviceForm.controls.NmonFilePath"></control-messages>
         </div>
       </div>
+      <div class="form-group">
+        <label class="control-label col-sm-2" for="NmonFilters">NmonFilters</label>
+        <i placement="top" style="float: left" class="info control-label glyphicon glyphicon-info-sign" tooltipAnimation="true" tooltip="Comma separated nmon tag filters in regex format  example: '^TOP$,^MEM.*$' (^TOP Recommended) "></i>
+        <div class="col-sm-9">
+          <input  formControlName="NmonFilters" id="NmonFilters"  [ngModel]="deviceForm.value.NmonFilters"/>
+          <control-messages [control]="deviceForm.controls.NmonFilters"></control-messages>
+        </div>
+      </div>
   </div>
 
   <div class="well well-sm">
