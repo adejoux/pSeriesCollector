@@ -120,6 +120,8 @@ func init() {
 	}
 	cfg := &agent.MainConfig
 
+	log.Infof("CONFIG %+v", cfg)
+
 	if len(cfg.General.LogDir) > 0 {
 		logDir = cfg.General.LogDir
 		os.Mkdir(logDir, 0755)
@@ -181,9 +183,8 @@ func main() {
 
 	agent.MainConfig.Database.InitDB()
 	impexp.SetDB(&agent.MainConfig.Database)
-
+	agent.SetDefTimeZone(agent.MainConfig.Nmon.DefTimeZone)
 	agent.LoadConf()
-
 	agent.DeviceProcessStart()
 
 	webui.WebServer(filepath.Join(homeDir, "public"), httpPort, &agent.MainConfig.HTTP, agent.MainConfig.General.InstanceID)

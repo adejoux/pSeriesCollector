@@ -300,17 +300,22 @@ const timeformat = "15:04:05 02-Jan-2006"
 
 //SetTimeZoneLocation set the timezone used to input metrics in InfluxDB
 func (nf *NmonFile) SetTimeZoneLocation(tz string) (err error) {
+
 	var loc *time.Location
 	if len(tz) > 0 {
 		loc, err = time.LoadLocation(tz)
+		nf.log.Infof("END Timezone Finaly set at %s", tz)
 		if err != nil {
 			loc = time.FixedZone("Europe/Paris", 2*60*60)
+			nf.log.Warnf("WARN On set timezone %s, %s", tz, err)
 		}
 	} else {
 		timezone, _ := time.Now().In(time.Local).Zone()
+		nf.log.Infof("END Timezone Finaly set at %s", timezone)
 		loc, err = time.LoadLocation(timezone)
 		if err != nil {
 			loc = time.FixedZone("Europe/Paris", 2*60*60)
+			nf.log.Warnf("WARN On set timezone %s, %s", timezone, err)
 		}
 	}
 

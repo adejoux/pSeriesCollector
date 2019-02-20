@@ -43,12 +43,18 @@ type HTTPConfig struct {
 	CookieID      string `toml:"cookieid"`
 }
 
+// NmonConfig basic conf for nmon files
+type NmonConfig struct {
+	DefTimeZone string `mapstructure:"default_timezone"`
+}
+
 // Config All resitor configuration
 type Config struct {
 	General  GeneralConfig
 	Database DatabaseCfg
 	Selfmon  SelfMonConfig
 	HTTP     HTTPConfig
+	Nmon     NmonConfig
 }
 
 //var MainConfig Config

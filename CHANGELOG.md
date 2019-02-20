@@ -1,3 +1,7 @@
+# v 0.5.3 (2019-02-20)
+
+* Added Default Timezone for get data from the Nmon Files in the config file  ( when no way to get from remote files with variable TZ or /etc/timezone file) , if eny error in this settings the  default zone "Europe/Paris" will be used, if no configuration for both local timezone will be used
+
 # v 0.5.2 (2019-02-19)
 
 * Added new NmonFilters (USER FILTERS) option into the device section as an comma separated REGEX array, allowing users skip some data from the nmon files. ( implemements #33) , the default will be allways "^TOP" tha ussually sends to muchs data to our databases

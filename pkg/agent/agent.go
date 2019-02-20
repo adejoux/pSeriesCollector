@@ -69,11 +69,17 @@ var (
 	// for synchronize  deivce specific goroutines
 	gatherWg sync.WaitGroup
 	senderWg sync.WaitGroup
+
+	defTimezone string
 )
 
 // SetLogger set log output
 func SetLogger(l *logrus.Logger) {
 	log = l
+}
+
+func SetDefTimeZone(tz string) {
+	defTimezone = tz
 }
 
 //Reload Mutex Related Methods.
@@ -281,7 +287,7 @@ func LoadConf() {
 			log.Infof("Skipping Device Creation ID:%s (Type:%s|enabled:%t)", c.Name, c.Type, c.EnableHMCStats)
 			continue
 		}
-		dev := nmon.New(c)
+		dev := nmon.New(c, defTimezone)
 		dev.AttachToBus(c.ID, Bus)
 		dev.SetSelfMonitoring(selfmonProc)
 		//send db's map to initialize each one its own db if needed and not yet initialized

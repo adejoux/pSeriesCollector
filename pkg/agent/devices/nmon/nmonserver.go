@@ -54,9 +54,12 @@ func (d *Server) ScanNmonDevice() error {
 }
 
 // New create and Initialice a device Object
-func New(c *config.DeviceCfg) *Server {
-	dev := Server{}
+func New(c *config.DeviceCfg, tz string) *Server {
+
+	dev := Server{Timezone: tz}
+
 	dev.Init(c)
+	dev.Infof("New Device created:  %s | Timezone ( %s )", c.Name, tz)
 	//Creating filters
 	if len(c.NmonFilters) > 0 {
 		dev.FilterMap = make(map[string]*regexp.Regexp)
@@ -258,15 +261,17 @@ func (d *Server) reconnect() error {
 		d.Errorf("Error on Device connection %s", err)
 		return err
 	}
+	d.Infof("Server Timezone set to: %s", d.Timezone)
 	//GetServer TimeZone
 	// Create a SSH session. It is one session per command.
 	out, err := d.SSHRemoteExec("echo $TZ")
 	if err != nil {
 		d.Warnf("Error on get TimeZone by cmd echo $TZ: %s", err)
 	}
-	d.Timezone = strings.TrimSuffix(out, "\n")
-	if len(d.Timezone) > 0 {
-		d.Infof("Connected to Device  OK : ID: %s : Duration %s : Timezone :%s ", id, t.String(), d.Timezone)
+	tz := strings.TrimSuffix(out, "\n")
+	if len(tz) > 0 {
+		d.Infof("Connected to Device (echo $TZ) OK : ID: %s : Duration %s : Timezone :%s ", id, t.String(), tz)
+		d.Timezone = tz
 		return nil
 	}
 	out, err = d.SSHRemoteExec("cat /etc/timezone")
@@ -274,9 +279,10 @@ func (d *Server) reconnect() error {
 		d.Warnf("Error on get TimeZone /etc/timezone: %s", err)
 	}
 
-	d.Timezone = strings.TrimSuffix(out, "\n")
-	if len(d.Timezone) > 0 {
-		d.Infof("Connected to Device  OK : ID: %s : Duration %s : Timezone :%s ", id, t.String(), d.Timezone)
+	tz = strings.TrimSuffix(out, "\n")
+	if len(tz) > 0 {
+		d.Infof("Connected to Device  (cat /etc/timezone) OK : ID: %s : Duration %s : Timezone :%s ", id, t.String(), tz)
+		d.Timezone = tz
 		return nil
 	}
 	return nil

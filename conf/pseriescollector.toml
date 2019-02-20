@@ -71,3 +71,6 @@
  adminuser = "adm1"
  adminpassword = "adm1pass"
  cookieid = "my_instance_cookie"
+
+[nmon]
+  default_timezone = "Europe/Paris"
