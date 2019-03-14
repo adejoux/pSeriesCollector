@@ -1,3 +1,7 @@
+# v 0.5.4 (2019-03-14)
+
+* Fix #34,#35
+
 # v 0.5.3 (2019-02-20)
 
 * Added Default Timezone for get data from the Nmon Files in the config file  ( when no way to get from remote files with variable TZ or /etc/timezone file) , if eny error in this settings the  default zone "Europe/Paris" will be used, if no configuration for both local timezone will be used
