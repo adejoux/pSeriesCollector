@@ -271,19 +271,31 @@ func (d *Server) reconnect() error {
 	tz := strings.TrimSuffix(out, "\n")
 	if len(tz) > 0 {
 		d.Infof("Connected to Device (echo $TZ) OK : ID: %s : Duration %s : Timezone :%s ", id, t.String(), tz)
-		d.Timezone = tz
-		return nil
+		_, err := time.LoadLocation(tz)
+		if err != nil {
+			d.Errorf("Got Timezone: %s is not a valid Timezone : ERR : %s", tz, err)
+		} else {
+			d.Timezone = tz
+			return nil
+		}
+
 	}
 	out, err = d.SSHRemoteExec("cat /etc/timezone")
 	if err != nil {
 		d.Warnf("Error on get TimeZone /etc/timezone: %s", err)
+		return nil
 	}
 
 	tz = strings.TrimSuffix(out, "\n")
 	if len(tz) > 0 {
 		d.Infof("Connected to Device  (cat /etc/timezone) OK : ID: %s : Duration %s : Timezone :%s ", id, t.String(), tz)
-		d.Timezone = tz
-		return nil
+		_, err := time.LoadLocation(tz)
+		if err != nil {
+			d.Errorf("Got Timezone: %s is not a valid Timezone : ERR : %s", tz, err)
+		} else {
+			d.Timezone = tz
+			return nil
+		}
 	}
 	return nil
 }
