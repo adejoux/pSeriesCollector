@@ -373,6 +373,9 @@ func (nf *NmonFile) ProcessPending(points *pointarray.PointArray, tags map[strin
 
 		} else {
 			nf.log.Errorf("ProcessPending: ERROR: first Pending data is not ZZZZZ (Time) section got this one [%s]", firstline)
+			if len(nf.PendingLines) > 1 {
+				nf.PendingLines = nf.PendingLines[1:]
+			}
 			//PENDING what to do if this happens?
 			return
 		}
@@ -396,7 +399,7 @@ func (nf *NmonFile) ProcessPending(points *pointarray.PointArray, tags map[strin
 		t, err := nf.convertTimeStamp(ts)
 		if err != nil {
 			nf.log.Errorf("ProcessPending: Error on Timestamp conversion %s", err)
-			continue
+			return
 		}
 		nf.ProcessChunk(points, tags, t, tsID, nmonChunk)
 		nf.LastTime = t
